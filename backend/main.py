@@ -293,24 +293,38 @@ async def compress_pdf_route(data: ConvertRequest):
     output_path = os.path.join(UPLOAD_DIR, output_filename)
 
     try:
-        reader = PdfReader(input_path)
-        writer = PdfWriter()
-        
-        for page in reader.pages:
-            writer.add_page(page)
-            
-        for page in writer.pages:
-            # 壓縮內容串流
-            page.compress_content_streams()
-            # 壓縮圖片資源
-            for img in page.images:
+        doc = fitz.open(input_path)
+        for page_num in range(len(doc)):
+            page = doc[page_num]
+            image_list = page.get_images(full=True)
+            for img_info in image_list:
+                xref = img_info[0]
                 try:
-                    img.replace(img.image, quality=50) # 50% 品質壓縮
-                except Exception as e:
-                    print(f"[壓縮警告] 無法壓縮某張圖片: {e}")
+                    base_image = doc.extract_image(xref)
+                    image_bytes = base_image["image"]
                     
-        with open(output_path, "wb") as f:
-            writer.write(f)
+                    # Load image into Pillow
+                    image = Image.open(io.BytesIO(image_bytes))
+                    
+                    # Downscale if width or height > 1024
+                    max_size = 1024
+                    if image.width > max_size or image.height > max_size:
+                        image.thumbnail((max_size, max_size))
+                    
+                    output_bytes = io.BytesIO()
+                    if image.mode in ("RGBA", "P"):
+                        image = image.convert("RGB")
+                    
+                    image.save(output_bytes, format="JPEG", quality=50, optimize=True)
+                    new_image_bytes = output_bytes.getvalue()
+                    
+                    # Replace the image
+                    page.replace_image(xref, stream=new_image_bytes)
+                except Exception as img_err:
+                    print(f"[壓縮警告] 無法壓縮某張圖片: {img_err}")
+                    
+        doc.save(output_path, garbage=4, deflate=True, clean=True)
+        doc.close()
             
     except Exception as e:
         print(f"[壓縮錯誤] 檔案 {input_filename} 壓縮失敗: {str(e)}")
