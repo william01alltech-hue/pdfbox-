@@ -1,0 +1,14 @@
+# Version control ignore rules for PDFBox PWA
+
+# Python dependencies & cache
+backend/.venv/
+backend/__pycache__/
+backend/temp_storage/*
+!backend/temp_storage/.gitkeep
+
+# OS generated files
+.DS_Store
+.DS_Store?
+ehthumbs.db
+Icon?
+Thumbs.db

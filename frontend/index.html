@@ -1,0 +1,2319 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PDFBox - 線上免費 PDF 工具箱 (合併、轉 Word、轉圖片)</title>
+    <meta name="description" content="PDFBox 是一個免費且安全的線上 PDF 工具箱。支援多個 PDF 檔案合併、PDF 轉 Word (DOCX) 以及 PDF 轉高畫質圖片 (JPG/ZIP)，完全免安裝、操作極簡且保護您的隱私。">
+    <meta property="og:title" content="PDFBox - 線上免費 PDF 工具箱">
+    <meta property="og:description" content="免費線上 PDF 合併、轉 Word、轉圖片工具，快速、安全且無廣告干擾。">
+    <meta property="og:type" content="website">
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebApplication",
+      "name": "PDFBox",
+      "description": "免費線上 PDF 工具箱，提供 PDF 合併、PDF 轉 Word 及 PDF 轉圖片服務。",
+      "applicationCategory": "UtilityApplication",
+      "operatingSystem": "All",
+      "browserRequirements": "Requires HTML5 support",
+      "offers": {
+        "@type": "Offer",
+        "price": "0.00",
+        "priceCurrency": "USD"
+      }
+    }
+    </script>
+    <!-- Google Analytics (GA4) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-XXXXXXXXXX"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'G-XXXXXXXXXX');
+    </script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="manifest" href="./manifest.json">
+</head>
+<body class="bg-gray-50 text-gray-800 flex flex-col min-h-screen">
+
+    <!-- 1. 頂部導覽列 -->
+    <header class="bg-white shadow-sm sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
+            <span class="text-xl font-bold text-red-600">PDFBox</span>
+            <nav class="hidden md:flex space-x-6 text-sm font-medium">
+                <a href="#" class="text-red-600 font-semibold">合併 PDF</a>
+                <a href="#" class="hover:text-red-600">PDF 轉 Word</a>
+            </nav>
+        </div>
+    </header>
+
+    <!-- 2. 中間主內容區 -->
+    <main class="flex-grow max-w-4xl mx-auto px-4 py-12 w-full flex flex-col items-center">
+        <div class="text-center mb-8">
+            <h1 class="text-3xl md:text-4xl font-extrabold mb-3">免費線上 PDF 合併工具</h1>
+            <p class="text-gray-500">輕鬆結合多個 PDF 檔案為一個，快速且安全。</p>
+        </div>
+
+        <!-- 隱藏的多檔案輸入框 -->
+        <input type="file" id="fileInput" class="hidden" accept=".pdf" multiple>
+
+        <!-- 拖曳上傳區 -->
+        <div id="dropZone" onclick="document.getElementById('fileInput').click()" class="w-full border-2 border-dashed border-gray-300 rounded-2xl p-8 text-center bg-white hover:border-red-500 transition cursor-pointer shadow-sm">
+            <svg class="mx-auto h-12 w-12 text-gray-400 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+            </svg>
+            <p class="text-lg font-medium text-gray-700">選擇多個 PDF 檔案或拖曳至此處</p>
+            <p class="text-xs text-gray-400 mt-1">可同時選取多個檔案</p>
+            <button class="mt-4 bg-red-600 text-white px-6 py-2 rounded-xl font-medium hover:bg-red-700 transition shadow-md">選擇 PDF 檔案</button>
+        </div>
+
+        <!-- 已選擇的檔案清單預覽區 -->
+        <div id="fileListContainer" class="w-full mt-6 hidden">
+            <h3 class="text-md font-semibold text-gray-700 mb-3">已選擇的檔案：</h3>
+            <ul id="fileList" class="bg-white rounded-xl shadow-sm border border-gray-200 divide-y divide-gray-100 mb-6">
+                <!-- 動態插入檔案項目 -->
+            </ul>
+            <button id="mergeBtn" class="w-full bg-green-600 text-white py-3 rounded-xl font-bold hover:bg-green-700 transition shadow-md flex items-center justify-center space-x-2">
+                <span>開始合併 PDF</span>
+            </button>
+        </div>
+
+        <!-- 處理結果與下載區 -->
+        <div id="resultBox" class="mt-6 text-center hidden">
+            <p id="resultText" class="text-sm font-medium text-gray-600 mb-3"></p>
+            <a id="downloadLink" href="#" class="inline-block bg-blue-600 text-white px-6 py-2.5 rounded-xl font-medium hover:bg-blue-700 transition shadow-md hidden">下載合併後的 PDF</a>
+        </div>
+
+        <!-- PDF 轉圖片操作區 -->
+        <div class="w-full mt-10 bg-white rounded-2xl p-8 shadow-sm border border-gray-200">
+            <h2 class="text-xl font-bold text-gray-800 mb-4">PDF 轉圖片 (JPG)</h2>
+            <p class="text-sm text-gray-500 mb-6">將 PDF 的每一頁轉換為高畫質 JPG 圖片，並打包成 ZIP 檔下載。</p>
+
+            <!-- 單檔上傳 Input -->
+            <input type="file" id="imageFileInput" class="hidden" accept=".pdf">
+            
+            <div id="imageDropZone" onclick="document.getElementById('imageFileInput').click()" class="border-2 border-dashed border-gray-300 rounded-xl p-6 text-center hover:border-purple-500 transition cursor-pointer bg-gray-50">
+                <p id="imageFileName" class="text-sm font-medium text-gray-700">點擊或拖曳單一 PDF 檔案至此進行轉圖片</p>
+            </div>
+
+            <button id="convertImageBtn" class="mt-4 w-full bg-purple-600 text-white py-2.5 rounded-xl font-bold hover:bg-purple-700 transition shadow-md hidden">
+                開始轉為圖片壓縮包
+            </button>
+
+            <!-- 轉圖片結果 -->
+            <div id="imageResultBox" class="mt-4 text-center hidden">
+                <a id="imageDownloadLink" href="#" class="inline-block bg-green-600 text-white px-6 py-2 rounded-xl font-medium hover:bg-green-700 transition shadow-md">下載圖片 ZIP 壓縮包</a>
+            </div>
+        </div>
+
+        <!-- PDF 轉 Word 操作區塊 -->
+        <div class="w-full max-w-4xl bg-white rounded-2xl p-8 shadow-sm border border-gray-200 mt-10">
+            <div class="flex items-center space-x-3 mb-4">
+                <div class="w-10 h-10 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center font-bold text-lg">📝</div>
+                <div>
+                    <h2 class="text-xl font-bold text-gray-800">PDF 轉 Word (DOCX)</h2>
+                    <p class="text-sm text-gray-500">將 PDF 檔案安全地轉換為可編輯的 Word 文件。</p>
+                </div>
+            </div>
+
+            <!-- 隱藏的檔案上傳輸入框 -->
+            <input type="file" id="wordFileInput" class="hidden" accept=".pdf">
+
+            <!-- 拖曳與點擊上傳區 -->
+            <div id="wordDropZone" onclick="document.getElementById('wordFileInput').click()" class="border-2 border-dashed border-gray-300 rounded-xl p-8 text-center hover:border-blue-500 transition cursor-pointer bg-gray-50">
+                <svg class="mx-auto h-10 w-10 text-gray-400 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+                </svg>
+                <p id="wordFileNameDisplay" class="text-sm font-medium text-gray-700">點擊此處或拖曳單一 PDF 檔案進行上傳</p>
+                <p class="text-xs text-gray-400 mt-1">支援標準 PDF 格式</p>
+            </div>
+
+            <!-- 轉換按鈕 -->
+            <button id="convertWordBtn" class="mt-5 w-full bg-blue-600 text-white py-3 rounded-xl font-bold hover:bg-blue-700 transition shadow-md hidden flex items-center justify-center space-x-2">
+                <span>開始轉換為 Word</span>
+            </button>
+
+            <!-- 轉檔結果與下載區 -->
+            <div id="wordResultBox" class="mt-6 text-center hidden">
+                <div class="p-4 bg-green-50 border border-green-100 rounded-xl mb-4">
+                    <p class="text-green-700 font-semibold text-sm">🎉 轉 Word 成功！檔案已準備就緒。</p>
+                </div>
+                <a id="wordDownloadLink" href="#" class="inline-block bg-green-600 text-white px-6 py-3 rounded-xl font-bold hover:bg-green-700 transition shadow-md">
+                    下載 Word 檔案 (.docx)
+                </a>
+            </div>
+        </div>
+
+        <!-- PDF 壓縮 操作區塊 -->
+        <div class="w-full max-w-4xl bg-white rounded-2xl p-8 shadow-sm border border-gray-200 mt-10">
+            <div class="flex items-center space-x-3 mb-4">
+                <div class="w-10 h-10 bg-green-50 text-green-600 rounded-xl flex items-center justify-center font-bold text-lg">📉</div>
+                <div>
+                    <h2 class="text-xl font-bold text-gray-800">PDF 壓縮 (Compress PDF)</h2>
+                    <p class="text-sm text-gray-500">壓縮 PDF 中的圖片並優化內容串流，在儘可能保留畫質的前提下極大縮減檔案大小。</p>
+                </div>
+            </div>
+
+            <!-- 隱藏的檔案上傳輸入框 -->
+            <input type="file" id="compressFileInput" class="hidden" accept=".pdf">
+
+            <!-- 拖曳與點擊上傳區 -->
+            <div id="compressDropZone" onclick="document.getElementById('compressFileInput').click()" class="border-2 border-dashed border-gray-300 rounded-xl p-8 text-center hover:border-green-500 transition cursor-pointer bg-gray-50">
+                <svg class="mx-auto h-10 w-10 text-gray-400 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+                </svg>
+                <p id="compressFileNameDisplay" class="text-sm font-medium text-gray-700">點擊此處或拖曳單一 PDF 檔案進行上傳</p>
+                <p class="text-xs text-gray-400 mt-1">支援標準 PDF 格式</p>
+            </div>
+
+            <!-- 轉換按鈕 -->
+            <button id="compressBtn" class="mt-5 w-full bg-green-600 text-white py-3 rounded-xl font-bold hover:bg-green-700 transition shadow-md hidden flex items-center justify-center space-x-2">
+                <span>開始壓縮 PDF</span>
+            </button>
+
+            <!-- 轉檔結果與下載區 -->
+            <div id="compressResultBox" class="mt-6 text-center hidden">
+                <div class="p-4 bg-green-50 border border-green-100 rounded-xl mb-4">
+                    <p class="text-green-700 font-semibold text-sm">🎉 壓縮成功！檔案已準備就緒。</p>
+                </div>
+                <a id="compressDownloadLink" href="#" class="inline-block bg-green-600 text-white px-6 py-3 rounded-xl font-bold hover:bg-green-700 transition shadow-md">
+                    下載壓縮後的 PDF (.pdf)
+                </a>
+            </div>
+        </div>
+
+        <!-- PDF 分割 操作區塊 -->
+        <div class="w-full max-w-4xl bg-white rounded-2xl p-8 shadow-sm border border-gray-200 mt-10">
+            <div class="flex items-center space-x-3 mb-4">
+                <div class="w-10 h-10 bg-yellow-50 text-yellow-600 rounded-xl flex items-center justify-center font-bold text-lg">✂️</div>
+                <div>
+                    <h2 class="text-xl font-bold text-gray-800">PDF 分割 (Split PDF)</h2>
+                    <p class="text-sm text-gray-500">將 PDF 分割為多個獨立檔案。您可以提取特定頁面範圍，或將每一頁單獨分離。</p>
+                </div>
+            </div>
+
+            <!-- 隱藏的檔案上傳輸入框 -->
+            <input type="file" id="splitFileInput" class="hidden" accept=".pdf">
+
+            <!-- 拖曳與點擊上傳區 -->
+            <div id="splitDropZone" onclick="document.getElementById('splitFileInput').click()" class="border-2 border-dashed border-gray-300 rounded-xl p-8 text-center hover:border-yellow-500 transition cursor-pointer bg-gray-50">
+                <svg class="mx-auto h-10 w-10 text-gray-400 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+                </svg>
+                <p id="splitFileNameDisplay" class="text-sm font-medium text-gray-700">點擊此處或拖曳單一 PDF 檔案進行上傳</p>
+                <p class="text-xs text-gray-400 mt-1">支援標準 PDF 格式</p>
+            </div>
+
+            <!-- 頁碼範圍設定 -->
+            <div id="splitRangeOptions" class="mt-4 hidden p-4 bg-gray-50 rounded-xl border border-gray-100 flex flex-col md:flex-row md:items-center md:space-x-4 space-y-3 md:space-y-0">
+                <span class="text-sm font-semibold text-gray-700">分割模式：</span>
+                <div class="flex items-center space-x-2">
+                    <input type="radio" id="splitModeRange" name="splitMode" value="range" checked onchange="toggleSplitInputs()">
+                    <label for="splitModeRange" class="text-sm text-gray-600">提取範圍：</label>
+                    <input type="number" id="splitStartPage" placeholder="起始頁" min="1" class="w-20 px-2 py-1 border border-gray-300 rounded text-sm text-center">
+                    <span class="text-sm text-gray-500">至</span>
+                    <input type="number" id="splitEndPage" placeholder="結束頁" min="1" class="w-20 px-2 py-1 border border-gray-300 rounded text-sm text-center">
+                </div>
+                <div class="flex items-center space-x-2">
+                    <input type="radio" id="splitModeAll" name="splitMode" value="all" onchange="toggleSplitInputs()">
+                    <label for="splitModeAll" class="text-sm text-gray-600">將所有頁面單獨分開 (下載 ZIP)</label>
+                </div>
+            </div>
+
+            <!-- 轉換按鈕 -->
+            <button id="splitBtn" class="mt-5 w-full bg-yellow-600 text-white py-3 rounded-xl font-bold hover:bg-yellow-700 transition shadow-md hidden flex items-center justify-center space-x-2">
+                <span>開始分割 PDF</span>
+            </button>
+
+            <!-- 轉檔結果與下載區 -->
+            <div id="splitResultBox" class="mt-6 text-center hidden">
+                <div class="p-4 bg-green-50 border border-green-100 rounded-xl mb-4">
+                    <p class="text-green-700 font-semibold text-sm">🎉 分割成功！檔案已準備就緒。</p>
+                </div>
+                <a id="splitDownloadLink" href="#" class="inline-block bg-green-600 text-white px-6 py-3 rounded-xl font-bold hover:bg-green-700 transition shadow-md">
+                    下載分割後的檔案
+                </a>
+            </div>
+        </div>
+
+        <!-- PDF 編輯 (旋轉/刪除) 操作區塊 -->
+        <div class="w-full max-w-4xl bg-white rounded-2xl p-8 shadow-sm border border-gray-200 mt-10">
+            <div class="flex items-center space-x-3 mb-4">
+                <div class="w-10 h-10 bg-indigo-50 text-indigo-600 rounded-xl flex items-center justify-center font-bold text-lg">🔄</div>
+                <div>
+                    <h2 class="text-xl font-bold text-gray-800">PDF 編輯 (旋轉與刪除頁面)</h2>
+                    <p class="text-sm text-gray-500">對 PDF 頁面進行旋轉或刪除指定頁數。</p>
+                </div>
+            </div>
+
+            <!-- 隱藏的檔案上傳輸入框 -->
+            <input type="file" id="editFileInput" class="hidden" accept=".pdf">
+
+            <!-- 拖曳與點擊上傳區 -->
+            <div id="editDropZone" onclick="document.getElementById('editFileInput').click()" class="border-2 border-dashed border-gray-300 rounded-xl p-8 text-center hover:border-indigo-500 transition cursor-pointer bg-gray-50">
+                <svg class="mx-auto h-10 w-10 text-gray-400 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+                </svg>
+                <p id="editFileNameDisplay" class="text-sm font-medium text-gray-700">點擊此處或拖曳單一 PDF 檔案進行上傳</p>
+                <p class="text-xs text-gray-400 mt-1">支援標準 PDF 格式</p>
+            </div>
+
+            <!-- 旋轉與刪除設定 -->
+            <div id="editPageOptions" class="mt-4 hidden p-4 bg-gray-50 rounded-xl border border-gray-100 flex flex-col space-y-3">
+                <div class="flex items-center space-x-2">
+                    <span class="text-sm font-semibold text-gray-700">旋轉角度：</span>
+                    <select id="editRotateAngle" class="px-2 py-1 border border-gray-300 rounded text-sm bg-white">
+                        <option value="0">無旋轉 (0°)</option>
+                        <option value="90">右轉 90°</option>
+                        <option value="180">旋轉 180°</option>
+                        <option value="270">左轉 90° (270°)</option>
+                    </select>
+                </div>
+                <div class="flex flex-col space-y-1">
+                    <span class="text-sm font-semibold text-gray-700">刪除頁面（輸入頁碼，多個以逗號隔開，例如：2, 4）：</span>
+                    <input type="text" id="editPagesToDelete" placeholder="例如：2, 5" class="w-full px-3 py-1.5 border border-gray-300 rounded text-sm">
+                </div>
+            </div>
+
+            <!-- 轉換按鈕 -->
+            <button id="editPageBtn" class="mt-5 w-full bg-indigo-600 text-white py-3 rounded-xl font-bold hover:bg-indigo-700 transition shadow-md hidden flex items-center justify-center space-x-2">
+                <span>開始編輯 PDF</span>
+            </button>
+
+            <!-- 轉檔結果與下載區 -->
+            <div id="editResultBox" class="mt-6 text-center hidden">
+                <div class="p-4 bg-green-50 border border-green-100 rounded-xl mb-4">
+                    <p class="text-green-700 font-semibold text-sm">🎉 編輯成功！檔案已準備就緒。</p>
+                </div>
+                <a id="editDownloadLink" href="#" class="inline-block bg-green-600 text-white px-6 py-3 rounded-xl font-bold hover:bg-green-700 transition shadow-md">
+                    下載編輯後的 PDF
+                </a>
+            </div>
+        </div>
+
+        <!-- PDF 安全 (加密/解鎖) 操作區塊 -->
+        <div class="w-full max-w-4xl bg-white rounded-2xl p-8 shadow-sm border border-gray-200 mt-10">
+            <div class="flex items-center space-x-3 mb-4">
+                <div class="w-10 h-10 bg-red-50 text-red-600 rounded-xl flex items-center justify-center font-bold text-lg">🔒</div>
+                <div>
+                    <h2 class="text-xl font-bold text-gray-800">PDF 安全防護 (加密與密碼解鎖)</h2>
+                    <p class="text-sm text-gray-500">為 PDF 檔案加入密碼鎖定，或對已鎖定的 PDF 輸入密碼進行解鎖除密。</p>
+                </div>
+            </div>
+
+            <!-- 隱藏的檔案上傳輸入框 -->
+            <input type="file" id="cryptoFileInput" class="hidden" accept=".pdf">
+
+            <!-- 拖曳與點擊上傳區 -->
+            <div id="cryptoDropZone" onclick="document.getElementById('cryptoFileInput').click()" class="border-2 border-dashed border-gray-300 rounded-xl p-8 text-center hover:border-red-500 transition cursor-pointer bg-gray-50">
+                <svg class="mx-auto h-10 w-10 text-gray-400 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+                </svg>
+                <p id="cryptoFileNameDisplay" class="text-sm font-medium text-gray-700">點擊此處或拖曳單一 PDF 檔案進行上傳</p>
+                <p class="text-xs text-gray-400 mt-1">支援加密或標準 PDF 格式</p>
+            </div>
+
+            <!-- 密碼輸入區 -->
+            <div id="cryptoPasswordOptions" class="mt-4 hidden p-4 bg-gray-50 rounded-xl border border-gray-100 flex flex-col space-y-3">
+                <div class="flex items-center space-x-4">
+                    <span class="text-sm font-semibold text-gray-700">操作選擇：</span>
+                    <label class="flex items-center space-x-1 text-sm text-gray-600">
+                        <input type="radio" name="cryptoAction" value="protect" checked onchange="toggleCryptoInputs()">
+                        <span>🔒 鎖定 PDF (加密)</span>
+                    </label>
+                    <label class="flex items-center space-x-1 text-sm text-gray-600">
+                        <input type="radio" name="cryptoAction" value="unlock" onchange="toggleCryptoInputs()">
+                        <span>🔓 解除密碼 (解鎖)</span>
+                    </label>
+                </div>
+                <div class="flex flex-col space-y-1">
+                    <span id="cryptoPasswordLabel" class="text-sm font-semibold text-gray-700">設定開啟密碼：</span>
+                    <input type="password" id="cryptoPassword" placeholder="請輸入密碼" class="w-full px-3 py-1.5 border border-gray-300 rounded text-sm">
+                </div>
+            </div>
+
+            <!-- 執行按鈕 -->
+            <button id="cryptoBtn" class="mt-5 w-full bg-red-600 text-white py-3 rounded-xl font-bold hover:bg-red-700 transition shadow-md hidden flex items-center justify-center space-x-2">
+                <span>執行安全防護</span>
+            </button>
+
+            <!-- 轉檔結果與下載區 -->
+            <div id="cryptoResultBox" class="mt-6 text-center hidden">
+                <div class="p-4 bg-green-50 border border-green-100 rounded-xl mb-4">
+                    <p class="text-green-700 font-semibold text-sm">🎉 安全處理成功！檔案已準備就緒。</p>
+                </div>
+                <a id="cryptoDownloadLink" href="#" class="inline-block bg-green-600 text-white px-6 py-3 rounded-xl font-bold hover:bg-green-700 transition shadow-md">
+                    下載處理後的 PDF
+                </a>
+            </div>
+        </div>
+
+        <!-- 圖片轉 PDF 操作區塊 -->
+        <div class="w-full max-w-4xl bg-white rounded-2xl p-8 shadow-sm border border-gray-200 mt-10">
+            <div class="flex items-center space-x-3 mb-4">
+                <div class="w-10 h-10 bg-pink-50 text-pink-600 rounded-xl flex items-center justify-center font-bold text-lg">🖼️</div>
+                <div>
+                    <h2 class="text-xl font-bold text-gray-800">圖片轉 PDF (JPG to PDF)</h2>
+                    <p class="text-sm text-gray-500">將多張 JPG 或 PNG 格式圖片依序合併轉換為單一 PDF 文件。</p>
+                </div>
+            </div>
+
+            <!-- 隱藏的檔案上傳輸入框 -->
+            <input type="file" id="jpgToPdfFileInput" class="hidden" accept="image/jpeg,image/png" multiple>
+
+            <!-- 拖曳與點擊上傳區 -->
+            <div id="jpgToPdfDropZone" onclick="document.getElementById('jpgToPdfFileInput').click()" class="border-2 border-dashed border-gray-300 rounded-xl p-8 text-center hover:border-pink-500 transition cursor-pointer bg-gray-50">
+                <svg class="mx-auto h-10 w-10 text-gray-400 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                </svg>
+                <p id="jpgToPdfFileNameDisplay" class="text-sm font-medium text-gray-700">點擊此處或拖曳多張圖片進行上傳</p>
+                <p class="text-xs text-gray-400 mt-1">支援 JPG、JPEG、PNG 格式</p>
+            </div>
+
+            <!-- 選擇的圖片清單 -->
+            <div id="jpgToPdfListContainer" class="mt-4 hidden">
+                <h3 class="text-sm font-semibold text-gray-700 mb-2">已選擇的圖片：</h3>
+                <ul id="jpgToPdfList" class="bg-gray-50 rounded-xl border border-gray-200 divide-y divide-gray-100 max-h-60 overflow-y-auto">
+                    <!-- 動態插入圖片項目 -->
+                </ul>
+            </div>
+
+            <!-- 執行按鈕 -->
+            <button id="jpgToPdfBtn" class="mt-5 w-full bg-pink-600 text-white py-3 rounded-xl font-bold hover:bg-pink-700 transition shadow-md hidden flex items-center justify-center space-x-2">
+                <span>開始轉為 PDF</span>
+            </button>
+
+            <!-- 轉檔結果與下載區 -->
+            <div id="jpgToPdfResultBox" class="mt-6 text-center hidden">
+                <div class="p-4 bg-green-50 border border-green-100 rounded-xl mb-4">
+                    <p class="text-green-700 font-semibold text-sm">🎉 圖片轉 PDF 成功！</p>
+                </div>
+                <a id="jpgToPdfDownloadLink" href="#" class="inline-block bg-green-600 text-white px-6 py-3 rounded-xl font-bold hover:bg-green-700 transition shadow-md">
+                    下載 PDF 檔案
+                </a>
+            </div>
+        </div>
+
+        <!-- PDF 加頁碼 操作區塊 -->
+        <div class="w-full max-w-4xl bg-white rounded-2xl p-8 shadow-sm border border-gray-200 mt-10">
+            <div class="flex items-center space-x-3 mb-4">
+                <div class="w-10 h-10 bg-teal-50 text-teal-600 rounded-xl flex items-center justify-center font-bold text-lg">🔢</div>
+                <div>
+                    <h2 class="text-xl font-bold text-gray-800">PDF 加頁碼 (Add Page Numbers)</h2>
+                    <p class="text-sm text-gray-500">自動為 PDF 文件每一頁添加編號頁碼，可自訂擺放位置。</p>
+                </div>
+            </div>
+
+            <!-- 隱藏的檔案上傳輸入框 -->
+            <input type="file" id="numFileInput" class="hidden" accept=".pdf">
+
+            <!-- 拖曳與點擊上傳區 -->
+            <div id="numDropZone" onclick="document.getElementById('numFileInput').click()" class="border-2 border-dashed border-gray-300 rounded-xl p-8 text-center hover:border-teal-500 transition cursor-pointer bg-gray-50">
+                <svg class="mx-auto h-10 w-10 text-gray-400 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+                </svg>
+                <p id="numFileNameDisplay" class="text-sm font-medium text-gray-700">點擊此處或拖曳單一 PDF 檔案進行上傳</p>
+                <p class="text-xs text-gray-400 mt-1">支援標準 PDF 格式</p>
+            </div>
+
+            <!-- 頁碼位置設定 -->
+            <div id="numPositionOptions" class="mt-4 hidden p-4 bg-gray-50 rounded-xl border border-gray-100 flex items-center space-x-4">
+                <span class="text-sm font-semibold text-gray-700">頁碼位置：</span>
+                <label class="flex items-center space-x-1 text-sm text-gray-600">
+                    <input type="radio" name="numPosition" value="bottom_center" checked>
+                    <span>底部中央</span>
+                </label>
+                <label class="flex items-center space-x-1 text-sm text-gray-600">
+                    <input type="radio" name="numPosition" value="bottom_left">
+                    <span>底部左側</span>
+                </label>
+                <label class="flex items-center space-x-1 text-sm text-gray-600">
+                    <input type="radio" name="numPosition" value="bottom_right">
+                    <span>底部右側</span>
+                </label>
+            </div>
+
+            <!-- 轉換按鈕 -->
+            <button id="numBtn" class="mt-5 w-full bg-teal-600 text-white py-3 rounded-xl font-bold hover:bg-teal-700 transition shadow-md hidden flex items-center justify-center space-x-2">
+                <span>開始新增頁碼</span>
+            </button>
+
+            <!-- 轉檔結果與下載區 -->
+            <div id="numResultBox" class="mt-6 text-center hidden">
+                <div class="p-4 bg-green-50 border border-green-100 rounded-xl mb-4">
+                    <p class="text-green-700 font-semibold text-sm">🎉 新增頁碼成功！檔案已準備就緒。</p>
+                </div>
+                <a id="numDownloadLink" href="#" class="inline-block bg-green-600 text-white px-6 py-3 rounded-xl font-bold hover:bg-green-700 transition shadow-md">
+                    下載加好頁碼的 PDF
+                </a>
+            </div>
+        </div>
+
+        <!-- PDF 加浮水印 操作區塊 -->
+        <div class="w-full max-w-4xl bg-white rounded-2xl p-8 shadow-sm border border-gray-200 mt-10">
+            <div class="flex items-center space-x-3 mb-4">
+                <div class="w-10 h-10 bg-cyan-50 text-cyan-600 rounded-xl flex items-center justify-center font-bold text-lg">📝</div>
+                <div>
+                    <h2 class="text-xl font-bold text-gray-800">PDF 加浮水印 (Add Watermark)</h2>
+                    <p class="text-sm text-gray-500">在 PDF 文件所有頁面中央加上半透明的防偽或版權浮水印字樣。</p>
+                </div>
+            </div>
+
+            <!-- 隱藏的檔案上傳輸入框 -->
+            <input type="file" id="wmFileInput" class="hidden" accept=".pdf">
+
+            <!-- 拖曳與點擊上傳區 -->
+            <div id="wmDropZone" onclick="document.getElementById('wmFileInput').click()" class="border-2 border-dashed border-gray-300 rounded-xl p-8 text-center hover:border-cyan-500 transition cursor-pointer bg-gray-50">
+                <svg class="mx-auto h-10 w-10 text-gray-400 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+                </svg>
+                <p id="wmFileNameDisplay" class="text-sm font-medium text-gray-700">點擊此處或拖曳單一 PDF 檔案進行上傳</p>
+                <p class="text-xs text-gray-400 mt-1">支援標準 PDF 格式</p>
+            </div>
+
+            <!-- 浮水印文字設定 -->
+            <div id="wmTextOptions" class="mt-4 hidden p-4 bg-gray-50 rounded-xl border border-gray-100 flex flex-col space-y-2">
+                <span class="text-sm font-semibold text-gray-700">浮水印文字內容：</span>
+                <input type="text" id="wmText" placeholder="例如：機密文件 CONFIDENTIAL" class="w-full px-3 py-1.5 border border-gray-300 rounded text-sm">
+            </div>
+
+            <!-- 轉換按鈕 -->
+            <button id="wmBtn" class="mt-5 w-full bg-cyan-600 text-white py-3 rounded-xl font-bold hover:bg-cyan-700 transition shadow-md hidden flex items-center justify-center space-x-2">
+                <span>開始新增浮水印</span>
+            </button>
+
+            <!-- 轉檔結果與下載區 -->
+            <div id="wmResultBox" class="mt-6 text-center hidden">
+                <div class="p-4 bg-green-50 border border-green-100 rounded-xl mb-4">
+                    <p class="text-green-700 font-semibold text-sm">🎉 新增浮水印成功！檔案已準備就緒。</p>
+                </div>
+                <a id="wmDownloadLink" href="#" class="inline-block bg-green-600 text-white px-6 py-3 rounded-xl font-bold hover:bg-green-700 transition shadow-md">
+                    下載加好浮水印的 PDF
+                </a>
+            </div>
+        </div>
+
+        <!-- Office 轉 PDF 操作區塊 -->
+        <div class="w-full max-w-4xl bg-white rounded-2xl p-8 shadow-sm border border-gray-200 mt-10">
+            <div class="flex items-center space-x-3 mb-4">
+                <div class="w-10 h-10 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center font-bold text-lg">📄</div>
+                <div>
+                    <h2 class="text-xl font-bold text-gray-800">Office 轉 PDF (Word / Excel / PPT 轉 PDF)</h2>
+                    <p class="text-sm text-gray-500">將 Microsoft Office 文件 (.docx, .doc, .xlsx, .xls, .pptx, .ppt) 轉換為標準 PDF 格式。</p>
+                </div>
+            </div>
+
+            <!-- 隱藏的檔案上傳輸入框 -->
+            <input type="file" id="wordToPdfFileInput" class="hidden" accept=".docx,.doc,.xlsx,.xls,.pptx,.ppt">
+
+            <!-- 拖曳與點擊上傳區 -->
+            <div id="wordToPdfDropZone" onclick="document.getElementById('wordToPdfFileInput').click()" class="border-2 border-dashed border-gray-300 rounded-xl p-8 text-center hover:border-blue-500 transition cursor-pointer bg-gray-50">
+                <svg class="mx-auto h-10 w-10 text-gray-400 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+                </svg>
+                <p id="wordToPdfFileNameDisplay" class="text-sm font-medium text-gray-700">點擊此處或拖曳單一 Office 檔案進行上傳</p>
+                <p class="text-xs text-gray-400 mt-1">支援 Word、Excel、PowerPoint 格式</p>
+            </div>
+
+            <!-- 轉換按鈕 -->
+            <button id="wordToPdfBtn" class="mt-5 w-full bg-blue-600 text-white py-3 rounded-xl font-bold hover:bg-blue-700 transition shadow-md hidden flex items-center justify-center space-x-2">
+                <span>開始轉為 PDF</span>
+            </button>
+
+            <!-- 轉檔結果與下載區 -->
+            <div id="wordToPdfResultBox" class="mt-6 text-center hidden">
+                <div class="p-4 bg-green-50 border border-green-100 rounded-xl mb-4">
+                    <p class="text-green-700 font-semibold text-sm">🎉 轉換成功！檔案已準備就緒。</p>
+                </div>
+                <a id="wordToPdfDownloadLink" href="#" class="inline-block bg-green-600 text-white px-6 py-3 rounded-xl font-bold hover:bg-green-700 transition shadow-md">
+                    下載 PDF 檔案
+                </a>
+            </div>
+        </div>
+
+        <!-- PDF 電子簽名 操作區塊 -->
+        <div class="w-full max-w-4xl bg-white rounded-2xl p-8 shadow-sm border border-gray-200 mt-10">
+            <div class="flex items-center space-x-3 mb-4">
+                <div class="w-10 h-10 bg-purple-50 text-purple-600 rounded-xl flex items-center justify-center font-bold text-lg">✍️</div>
+                <div>
+                    <h2 class="text-xl font-bold text-gray-800">PDF 線上電子簽名 (Sign PDF)</h2>
+                    <p class="text-sm text-gray-500">在線上繪製手寫簽名，並將簽名嵌入上傳的 PDF 合約最後一頁中。</p>
+                </div>
+            </div>
+
+            <!-- 手寫板 Canvas 區域 -->
+            <div class="flex flex-col items-center space-y-3 mb-6 bg-gray-50 p-4 rounded-xl border border-gray-200">
+                <span class="text-sm font-semibold text-gray-700">請在下方灰色區域內進行手寫簽名：</span>
+                <canvas id="sigCanvas" width="500" height="200" class="border border-gray-300 rounded bg-white cursor-crosshair shadow-inner max-w-full"></canvas>
+                <div class="flex space-x-2">
+                    <button id="sigClearBtn" class="bg-gray-200 text-gray-700 px-4 py-2 rounded text-sm font-medium hover:bg-gray-300 transition">清除手寫</button>
+                    <button id="sigSaveBtn" class="bg-purple-600 text-white px-4 py-2 rounded text-sm font-medium hover:bg-purple-700 transition">確認簽名</button>
+                </div>
+                <p id="sigStatusText" class="text-xs text-gray-500">手寫完成後，請點擊「確認簽名」進行鎖定</p>
+            </div>
+
+            <!-- PDF 檔案上傳 -->
+            <div id="sigPdfUploadSection" class="hidden">
+                <input type="file" id="sigFileInput" class="hidden" accept=".pdf">
+                <div id="sigDropZone" onclick="document.getElementById('sigFileInput').click()" class="border-2 border-dashed border-gray-300 rounded-xl p-8 text-center hover:border-purple-500 transition cursor-pointer bg-gray-50">
+                    <svg class="mx-auto h-10 w-10 text-gray-400 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+                    </svg>
+                    <p id="sigFileNameDisplay" class="text-sm font-medium text-gray-700">點擊此處上傳需要簽署的 PDF 文件</p>
+                </div>
+
+                <!-- 簽名位置選擇 -->
+                <div id="sigPositionOptions" class="mt-4 hidden p-4 bg-gray-50 rounded-xl border border-gray-100 flex items-center space-x-4">
+                    <span class="text-sm font-semibold text-gray-700">簽名位置（最後一頁）：</span>
+                    <label class="flex items-center space-x-1 text-sm text-gray-600">
+                        <input type="radio" name="sigPosition" value="bottom_right" checked>
+                        <span>右下角</span>
+                    </label>
+                    <label class="flex items-center space-x-1 text-sm text-gray-600">
+                        <input type="radio" name="sigPosition" value="bottom_left">
+                        <span>左下角</span>
+                    </label>
+                    <label class="flex items-center space-x-1 text-sm text-gray-600">
+                        <input type="radio" name="sigPosition" value="center">
+                        <span>中央</span>
+                    </label>
+                </div>
+
+                <!-- 執行按鈕 -->
+                <button id="sigSubmitBtn" class="mt-5 w-full bg-purple-600 text-white py-3 rounded-xl font-bold hover:bg-purple-700 transition shadow-md hidden flex items-center justify-center space-x-2">
+                    <span>開始簽署 PDF</span>
+                </button>
+            </div>
+
+            <!-- 轉檔結果與下載區 -->
+            <div id="sigResultBox" class="mt-6 text-center hidden">
+                <div class="p-4 bg-green-50 border border-green-100 rounded-xl mb-4">
+                    <p class="text-green-700 font-semibold text-sm">🎉 簽署成功！您的 PDF 檔案已完成手寫嵌入。</p>
+                </div>
+                <a id="sigDownloadLink" href="#" class="inline-block bg-green-600 text-white px-6 py-3 rounded-xl font-bold hover:bg-green-700 transition shadow-md">
+                    下載已簽字之 PDF
+                </a>
+            </div>
+        </div>
+
+        <!-- PDF 轉 Excel 操作區塊 -->
+        <div class="w-full max-w-4xl bg-white rounded-2xl p-8 shadow-sm border border-gray-200 mt-10">
+            <div class="flex items-center space-x-3 mb-4">
+                <div class="w-10 h-10 bg-emerald-50 text-emerald-600 rounded-xl flex items-center justify-center font-bold text-lg">📊</div>
+                <div>
+                    <h2 class="text-xl font-bold text-gray-800">PDF 轉 Excel (PDF to Excel)</h2>
+                    <p class="text-sm text-gray-500">自動掃描 PDF 頁面中的格線與文字，將裡面的表格提取並導出為 Excel 試算表。</p>
+                </div>
+            </div>
+
+            <!-- 隱藏的檔案上傳輸入框 -->
+            <input type="file" id="excelFileInput" class="hidden" accept=".pdf">
+
+            <!-- 拖曳與點擊上傳區 -->
+            <div id="excelDropZone" onclick="document.getElementById('excelFileInput').click()" class="border-2 border-dashed border-gray-300 rounded-xl p-8 text-center hover:border-emerald-500 transition cursor-pointer bg-gray-50">
+                <svg class="mx-auto h-10 w-10 text-gray-400 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+                </svg>
+                <p id="excelFileNameDisplay" class="text-sm font-medium text-gray-700">點擊此處或拖曳單一 PDF 檔案進行上傳</p>
+                <p class="text-xs text-gray-400 mt-1">支援標準 PDF 格式</p>
+            </div>
+
+            <!-- 執行按鈕 -->
+            <button id="excelSubmitBtn" class="mt-5 w-full bg-emerald-600 text-white py-3 rounded-xl font-bold hover:bg-emerald-700 transition shadow-md hidden flex items-center justify-center space-x-2">
+                <span>開始轉為 Excel</span>
+            </button>
+
+            <!-- 轉檔結果與下載區 -->
+            <div id="excelResultBox" class="mt-6 text-center hidden">
+                <div class="p-4 bg-green-50 border border-green-100 rounded-xl mb-4">
+                    <p class="text-green-700 font-semibold text-sm">🎉 提取成功！表格已匯出為試算表。</p>
+                </div>
+                <a id="excelDownloadLink" href="#" class="inline-block bg-green-600 text-white px-6 py-3 rounded-xl font-bold hover:bg-green-700 transition shadow-md">
+                    下載 Excel 試算表 (.xlsx)
+                </a>
+            </div>
+        </div>
+
+        <!-- PDF 修復 操作區塊 -->
+        <div class="w-full max-w-4xl bg-white rounded-2xl p-8 shadow-sm border border-gray-200 mt-10">
+            <div class="flex items-center space-x-3 mb-4">
+                <div class="w-10 h-10 bg-orange-50 text-orange-600 rounded-xl flex items-center justify-center font-bold text-lg">🛠️</div>
+                <div>
+                    <h2 class="text-xl font-bold text-gray-800">PDF 檔案修復 (Repair PDF)</h2>
+                    <p class="text-sm text-gray-500">修復損毀、打不開、格式損壞的 PDF 檔案，嘗試恢復其數據結構。</p>
+                </div>
+            </div>
+
+            <!-- 隱藏的檔案上傳輸入框 -->
+            <input type="file" id="repairFileInput" class="hidden" accept=".pdf">
+
+            <!-- 拖曳與點擊上傳區 -->
+            <div id="repairDropZone" onclick="document.getElementById('repairFileInput').click()" class="border-2 border-dashed border-gray-300 rounded-xl p-8 text-center hover:border-orange-500 transition cursor-pointer bg-gray-50">
+                <svg class="mx-auto h-10 w-10 text-gray-400 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+                </svg>
+                <p id="repairFileNameDisplay" class="text-sm font-medium text-gray-700">點擊此處或拖曳單一損毀的 PDF 檔案進行上傳</p>
+                <p class="text-xs text-gray-400 mt-1">系統將自動分析並進行壞軌修復</p>
+            </div>
+
+            <!-- 執行按鈕 -->
+            <button id="repairSubmitBtn" class="mt-5 w-full bg-orange-600 text-white py-3 rounded-xl font-bold hover:bg-orange-700 transition shadow-md hidden flex items-center justify-center space-x-2">
+                <span>開始修復 PDF</span>
+            </button>
+
+            <!-- 轉檔結果與下載區 -->
+            <div id="repairResultBox" class="mt-6 text-center hidden">
+                <div class="p-4 bg-green-50 border border-green-100 rounded-xl mb-4">
+                    <p class="text-green-700 font-semibold text-sm">🎉 修復成功！檔案已完成數據重建。</p>
+                </div>
+                <a id="repairDownloadLink" href="#" class="inline-block bg-green-600 text-white px-6 py-3 rounded-xl font-bold hover:bg-green-700 transition shadow-md">
+                    下載修復後的 PDF
+                </a>
+            </div>
+        </div>
+
+        <!-- PDF 頁面重整與排序 操作區塊 -->
+        <div class="w-full max-w-4xl bg-white rounded-2xl p-8 shadow-sm border border-gray-200 mt-10">
+            <div class="flex items-center space-x-3 mb-4">
+                <div class="w-10 h-10 bg-sky-50 text-sky-600 rounded-xl flex items-center justify-center font-bold text-lg">🗂️</div>
+                <div>
+                    <h2 class="text-xl font-bold text-gray-800">PDF 頁面重整與排序 (Organize PDF)</h2>
+                    <p class="text-sm text-gray-500">上傳 PDF 檔案，自由拖曳調整頁面順序，或是刪除指定頁面以重組新文件。</p>
+                </div>
+            </div>
+
+            <!-- 隱藏的檔案上傳輸入框 -->
+            <input type="file" id="orgFileInput" class="hidden" accept=".pdf">
+
+            <!-- 拖曳與點擊上傳區 -->
+            <div id="orgDropZone" onclick="document.getElementById('orgFileInput').click()" class="border-2 border-dashed border-gray-300 rounded-xl p-8 text-center hover:border-sky-500 transition cursor-pointer bg-gray-50">
+                <svg class="mx-auto h-10 w-10 text-gray-400 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path>
+                </svg>
+                <p id="orgFileNameDisplay" class="text-sm font-medium text-gray-700">點擊此處或拖曳單一 PDF 檔案載入頁面縮圖</p>
+                <p class="text-xs text-gray-400 mt-1">系統將解析並顯示各頁縮圖</p>
+            </div>
+
+            <!-- 頁面縮圖重整排序區 -->
+            <div id="orgPagesWrapper" class="mt-6 hidden">
+                <p class="text-xs text-gray-500 mb-3">💡 提示：使用滑鼠或手指直接「拖曳」缩圖來調整順序，或是點擊縮圖右下角的「🗑️ 刪除」移除該頁。</p>
+                <div id="orgThumbnailContainer" class="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 gap-4 p-4 bg-gray-50 border border-gray-200 rounded-xl">
+                    <!-- 縮圖將會動態生成並插入到這裡 -->
+                </div>
+            </div>
+
+            <!-- 執行按鈕 -->
+            <button id="orgSubmitBtn" class="mt-5 w-full bg-sky-600 text-white py-3 rounded-xl font-bold hover:bg-sky-700 transition shadow-md hidden flex items-center justify-center space-x-2">
+                <span>生成並重組 PDF</span>
+            </button>
+
+            <!-- 轉檔結果與下載區 -->
+            <div id="orgResultBox" class="mt-6 text-center hidden">
+                <div class="p-4 bg-green-50 border border-green-100 rounded-xl mb-4">
+                    <p class="text-green-700 font-semibold text-sm">🎉 PDF 重組成功！檔案已準備就緒。</p>
+                </div>
+                <a id="orgDownloadLink" href="#" class="inline-block bg-green-600 text-white px-6 py-3 rounded-xl font-bold hover:bg-green-700 transition shadow-md">
+                    下載重組後的 PDF
+                </a>
+            </div>
+        </div>
+    </main>
+
+    <!-- 全局 Toast 提示容器 -->
+    <div id="toastContainer" class="fixed top-5 right-5 z-[100] flex flex-col space-y-3 pointer-events-none"></div>
+
+    <!-- 全局 Loading 遮罩 -->
+    <div id="loadingOverlay" class="fixed inset-0 bg-gray-900/50 backdrop-blur-sm z-[99] flex flex-col items-center justify-center hidden">
+        <div class="bg-white p-6 rounded-2xl shadow-xl flex flex-col items-center space-y-4 max-w-xs w-full mx-4">
+            <svg class="animate-spin h-10 w-10 text-red-600" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            <p id="loadingText" class="text-sm font-semibold text-gray-700 text-center">處理中，請稍候...</p>
+        </div>
+    </div>
+
+    <!-- 3. 底部固定 AdSense 廣告橫幅 -->
+    <footer class="bg-white border-t border-gray-200 sticky bottom-0 z-40 py-2 shadow-inner">
+        <div class="max-w-4xl mx-auto px-4 flex justify-center items-center">
+            <div class="w-full h-[60px] bg-gray-100 flex items-center justify-center overflow-hidden rounded">
+                <span class="text-xs text-gray-400">[ Google AdSense 廣告橫幅區 ]</span>
+            </div>
+        </div>
+    </footer>
+
+    <!-- 4. 前端 JavaScript 邏輯 -->
+    <script>
+        const API_BASE = window.location.hostname === '127.0.0.1' || window.location.hostname === 'localhost'
+            ? "http://127.0.0.1:8000"
+            : "https://pdfbox-api.onrender.com"; // 上線後 Render 後端 API 自動切換
+
+        // Toast 訊息提示
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            toast.className = `transform translate-y-2 opacity-0 transition-all duration-300 pointer-events-auto p-4 rounded-xl shadow-lg flex items-center space-x-3 text-white max-w-sm ${
+                type === 'success' ? 'bg-green-600' : type === 'error' ? 'bg-red-600' : 'bg-blue-600'
+            }`;
+            const icon = type === 'success' ? '✅' : type === 'error' ? '❌' : 'ℹ️';
+            toast.innerHTML = `<span>${icon}</span><span class="text-sm font-medium">${message}</span>`;
+            container.appendChild(toast);
+            setTimeout(() => toast.classList.remove('translate-y-2', 'opacity-0'), 10);
+            setTimeout(() => {
+                toast.classList.add('translate-y-2', 'opacity-0');
+                setTimeout(() => toast.remove(), 300);
+            }, 4000);
+        }
+
+        // Loading 遮罩切換
+        function toggleLoader(show, text = '處理中，請稍候...') {
+            const overlay = document.getElementById('loadingOverlay');
+            const loadingText = document.getElementById('loadingText');
+            loadingText.textContent = text;
+            if (show) {
+                overlay.classList.remove('hidden');
+            } else {
+                overlay.classList.add('hidden');
+            }
+        }
+
+        // GA4 事件追蹤輔助函式
+        function trackEvent(eventName, eventParams = {}) {
+            if (typeof gtag === 'function') {
+                gtag('event', eventName, eventParams);
+                console.log(`[GA4 Event] ${eventName}`, eventParams);
+            }
+        }
+
+        // 註冊 Service Worker
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./sw.js')
+                    .then(reg => console.log('Service Worker 註冊成功！Scope:', reg.scope))
+                    .catch(err => console.error('Service Worker 註冊失敗：', err));
+            });
+        }
+
+        const fileInput = document.getElementById('fileInput');
+        const fileListContainer = document.getElementById('fileListContainer');
+        const fileList = document.getElementById('fileList');
+        const mergeBtn = document.getElementById('mergeBtn');
+        const resultBox = document.getElementById('resultBox');
+        const resultText = document.getElementById('resultText');
+        const downloadLink = document.getElementById('downloadLink');
+
+        let uploadedFiles = []; // 儲存已成功上傳後端的檔案資訊 { name, file_id }
+
+        fileInput.addEventListener('change', async (event) => {
+            const files = Array.from(event.target.files);
+            if (files.length === 0) return;
+
+            fileListContainer.classList.remove('hidden');
+            resultBox.classList.add('hidden');
+            downloadLink.classList.add('hidden');
+
+            toggleLoader(true, '正在上傳檔案，請稍候...');
+
+            for (const file of files) {
+                const formData = new FormData();
+                formData.append('file', file);
+
+                try {
+                    // 逐一上傳至後端暫存
+                    const response = await fetch(`${API_BASE}/api/v1/upload`, {
+                        method: 'POST',
+                        body: formData
+                    });
+                    const result = await response.json();
+
+                    if (response.ok) {
+                        uploadedFiles.push({ name: file.name, file_id: result.file_id });
+                        renderFileList();
+                        showToast(`檔案 ${file.name} 上傳成功`, 'success');
+                    } else {
+                        showToast(`檔案 ${file.name} 上傳失敗: ${result.detail}`, 'error');
+                    }
+                } catch (error) {
+                    console.error('上傳錯誤:', error);
+                    showToast('無法連線至後端伺服器', 'error');
+                }
+            }
+            toggleLoader(false);
+            fileInput.value = ''; // 清空 input 允許重複選取同檔
+        });
+
+        function renderFileList() {
+            fileList.innerHTML = '';
+            uploadedFiles.forEach((item, index) => {
+                const li = document.createElement('li');
+                li.className = 'px-4 py-3 flex items-center justify-between text-sm';
+                li.innerHTML = `
+                    <span class="font-medium text-gray-800 truncate max-w-md">📄 ${item.name}</span>
+                    <button onclick="removeFile(${index})" class="text-red-500 hover:text-red-700 font-medium text-xs bg-red-50 px-2 py-1 rounded">移除</button>
+                `;
+                fileList.appendChild(li);
+            });
+        }
+
+        window.removeFile = function(index) {
+            uploadedFiles.splice(index, 1);
+            renderFileList();
+            if (uploadedFiles.length === 0) {
+                fileListContainer.classList.add('hidden');
+            }
+        }
+
+        // 點擊合併按鈕
+        mergeBtn.addEventListener('click', async () => {
+            if (uploadedFiles.length < 2) {
+                showToast('請至少上傳兩個 PDF 檔案才能進行合併！', 'error');
+                return;
+            }
+
+            toggleLoader(true, '正在進行 PDF 合併中，請稍候...');
+            mergeBtn.textContent = '正在合併中...';
+            mergeBtn.disabled = true;
+
+            const file_ids = uploadedFiles.map(f => f.file_id);
+
+            try {
+                const response = await fetch(`${API_BASE}/api/v1/manage/merge`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ file_ids })
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    resultBox.classList.remove('hidden');
+                    resultText.textContent = '🎉 PDF 合併成功！';
+                    downloadLink.href = `${API_BASE}${result.download_url}`;
+                    downloadLink.classList.remove('hidden');
+                    showToast('PDF 合併成功！', 'success');
+                } else {
+                    showToast(`合併失敗: ${result.detail}`, 'error');
+                }
+            } catch (error) {
+                console.error('合併請求錯誤:', error);
+                showToast('伺服器連線失敗', 'error');
+            } finally {
+                mergeBtn.textContent = '開始合併 PDF';
+                mergeBtn.disabled = false;
+                toggleLoader(false);
+            }
+        });
+
+        const imageFileInput = document.getElementById('imageFileInput');
+        const imageFileName = document.getElementById('imageFileName');
+        const convertImageBtn = document.getElementById('convertImageBtn');
+        const imageResultBox = document.getElementById('imageResultBox');
+        const imageDownloadLink = document.getElementById('imageDownloadLink');
+
+        let selectedImageIconFileId = null;
+
+        imageFileInput.addEventListener('change', async (event) => {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            imageFileName.textContent = `📄 已選擇：${file.name}`;
+            imageResultBox.classList.add('hidden');
+            toggleLoader(true, '正在上傳 PDF 檔案，請稍候...');
+
+            const formData = new FormData();
+            formData.append('file', file);
+
+            try {
+                const response = await fetch(`${API_BASE}/api/v1/upload`, {
+                    method: 'POST',
+                    body: formData
+                });
+                const result = await response.json();
+
+                if (response.ok) {
+                    selectedImageIconFileId = result.file_id;
+                    convertImageBtn.classList.remove('hidden');
+                    showToast('PDF 檔案上傳成功', 'success');
+                } else {
+                    showToast(`上傳失敗: ${result.detail}`, 'error');
+                }
+            } catch (error) {
+                console.error('上傳錯誤:', error);
+                showToast('伺服器連線失敗', 'error');
+            } finally {
+                toggleLoader(false);
+            }
+        });
+
+        convertImageBtn.addEventListener('click', async () => {
+            if (!selectedImageIconFileId) return;
+
+            toggleLoader(true, '正在渲染 PDF 分頁並打包為圖片 ZIP 壓縮包，請稍候...');
+            convertImageBtn.textContent = '正在轉換圖片中（請稍候）...';
+            convertImageBtn.disabled = true;
+
+            try {
+                const response = await fetch(`${API_BASE}/api/v1/convert/pdf-to-images`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ file_id: selectedImageIconFileId })
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    imageResultBox.classList.remove('hidden');
+                    imageDownloadLink.href = `${API_BASE}${result.download_url}`;
+                    showToast('PDF 轉圖片成功！', 'success');
+                } else {
+                    showToast(`轉換失敗: ${result.detail}`, 'error');
+                }
+            } catch (error) {
+                console.error('轉換錯誤:', error);
+                showToast('伺服器連線失敗', 'error');
+            } finally {
+                convertImageBtn.textContent = '開始轉為圖片壓縮包';
+                convertImageBtn.disabled = false;
+                toggleLoader(false);
+            }
+        });
+
+        const wordFileInput = document.getElementById('wordFileInput');
+        const wordFileNameDisplay = document.getElementById('wordFileNameDisplay');
+        const convertWordBtn = document.getElementById('convertWordBtn');
+        const wordResultBox = document.getElementById('wordResultBox');
+        const wordDownloadLink = document.getElementById('wordDownloadLink');
+
+        let uploadedWordFileId = null;
+
+        // 1. 監聽檔案選擇事件
+        wordFileInput.addEventListener('change', async (event) => {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            wordFileNameDisplay.textContent = `📄 已選擇檔案：${file.name}`;
+            wordResultBox.classList.add('hidden');
+            convertWordBtn.classList.add('hidden');
+            toggleLoader(true, '正在上傳 PDF 檔案，請稍候...');
+
+            const formData = new FormData();
+            formData.append('file', file);
+
+            try {
+                wordFileNameDisplay.textContent = `正在上傳 ${file.name} ...`;
+                
+                // 呼叫後端通用上傳 API 取得 file_id
+                const response = await fetch(`${API_BASE}/api/v1/upload`, {
+                    method: 'POST',
+                    body: formData
+                });
+                const result = await response.json();
+
+                if (response.ok) {
+                    uploadedWordFileId = result.file_id;
+                    wordFileNameDisplay.textContent = `✅ 檔案已就緒：${file.name}`;
+                    convertWordBtn.classList.remove('hidden'); // 顯示開始轉換按鈕
+                    showToast('PDF 檔案上傳成功', 'success');
+                } else {
+                    showToast(`上傳失敗: ${result.detail || '未知錯誤'}`, 'error');
+                    wordFileNameDisplay.textContent = '點擊此處或拖曳單一 PDF 檔案進行上傳';
+                }
+            } catch (error) {
+                console.error('上傳錯誤:', error);
+                showToast('無法連線至後端伺服器', 'error');
+                wordFileNameDisplay.textContent = '點擊此處或拖曳單一 PDF 檔案進行上傳';
+            } finally {
+                toggleLoader(false);
+            }
+        });
+
+        // 2. 監聽點擊「開始轉換」按鈕
+        convertWordBtn.addEventListener('click', async () => {
+            if (!uploadedWordFileId) return;
+
+            toggleLoader(true, '正在將 PDF 解析並轉換為 Word DOCX 格式，請稍候...');
+            convertWordBtn.textContent = '正在轉換為 Word 中（請稍候）...';
+            convertWordBtn.disabled = true;
+
+            try {
+                // 呼叫後端轉 Word API
+                const response = await fetch(`${API_BASE}/api/v1/convert/pdf-to-word`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ file_id: uploadedWordFileId })
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    wordResultBox.classList.remove('hidden');
+                    wordDownloadLink.href = `${API_BASE}${result.download_url}`;
+                    convertWordBtn.classList.add('hidden');
+                    showToast('PDF 轉 Word 成功！', 'success');
+                } else {
+                    showToast(`轉檔失敗: ${result.detail || '未知的後端錯誤'}`, 'error');
+                }
+            } catch (error) {
+                console.error('轉檔請求錯誤:', error);
+                showToast('伺服器連線失敗或轉檔逾時', 'error');
+            } finally {
+                convertWordBtn.textContent = '開始轉換為 Word';
+                convertWordBtn.disabled = false;
+                toggleLoader(false);
+            }
+        });
+
+        const compressFileInput = document.getElementById('compressFileInput');
+        const compressFileNameDisplay = document.getElementById('compressFileNameDisplay');
+        const compressBtn = document.getElementById('compressBtn');
+        const compressResultBox = document.getElementById('compressResultBox');
+        const compressDownloadLink = document.getElementById('compressDownloadLink');
+
+        let uploadedCompressFileId = null;
+
+        compressFileInput.addEventListener('change', async (event) => {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            compressFileNameDisplay.textContent = `📄 已選擇檔案：${file.name}`;
+            compressResultBox.classList.add('hidden');
+            compressBtn.classList.add('hidden');
+            toggleLoader(true, '正在上傳 PDF 檔案，請稍候...');
+
+            const formData = new FormData();
+            formData.append('file', file);
+
+            try {
+                const response = await fetch(`${API_BASE}/api/v1/upload`, {
+                    method: 'POST',
+                    body: formData
+                });
+                const result = await response.json();
+
+                if (response.ok) {
+                    uploadedCompressFileId = result.file_id;
+                    compressFileNameDisplay.textContent = `✅ 檔案已就緒：${file.name}`;
+                    compressBtn.classList.remove('hidden');
+                    showToast('PDF 檔案上傳成功', 'success');
+                } else {
+                    showToast(`上傳失敗: ${result.detail || '未知錯誤'}`, 'error');
+                    compressFileNameDisplay.textContent = '點擊此處或拖曳單一 PDF 檔案進行上傳';
+                }
+            } catch (error) {
+                console.error('上傳錯誤:', error);
+                showToast('無法連線至後端伺服器', 'error');
+                compressFileNameDisplay.textContent = '點擊此處或拖曳單一 PDF 檔案進行上傳';
+            } finally {
+                toggleLoader(false);
+            }
+        });
+
+        compressBtn.addEventListener('click', async () => {
+            if (!uploadedCompressFileId) return;
+
+            toggleLoader(true, '正在壓縮 PDF 檔案，請稍候...');
+            compressBtn.textContent = '正在壓縮中...';
+            compressBtn.disabled = true;
+
+            try {
+                const response = await fetch(`${API_BASE}/api/v1/manage/compress`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ file_id: uploadedCompressFileId })
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    compressResultBox.classList.remove('hidden');
+                    compressDownloadLink.href = `${API_BASE}${result.download_url}`;
+                    compressBtn.classList.add('hidden');
+                    showToast('PDF 壓縮成功！', 'success');
+                } else {
+                    showToast(`壓縮失敗: ${result.detail || '未知的後端錯誤'}`, 'error');
+                }
+            } catch (error) {
+                print(error);
+                console.error('壓縮請求錯誤:', error);
+                showToast('伺服器連線失敗或壓縮逾時', 'error');
+            } finally {
+                compressBtn.textContent = '開始壓縮 PDF';
+                compressBtn.disabled = false;
+                toggleLoader(false);
+            }
+        });
+
+        const splitFileInput = document.getElementById('splitFileInput');
+        const splitFileNameDisplay = document.getElementById('splitFileNameDisplay');
+        const splitRangeOptions = document.getElementById('splitRangeOptions');
+        const splitBtn = document.getElementById('splitBtn');
+        const splitResultBox = document.getElementById('splitResultBox');
+        const splitDownloadLink = document.getElementById('splitDownloadLink');
+        const splitStartPage = document.getElementById('splitStartPage');
+        const splitEndPage = document.getElementById('splitEndPage');
+
+        let uploadedSplitFileId = null;
+
+        window.toggleSplitInputs = function() {
+            const isRange = document.getElementById('splitModeRange').checked;
+            splitStartPage.disabled = !isRange;
+            splitEndPage.disabled = !isRange;
+        }
+
+        splitFileInput.addEventListener('change', async (event) => {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            splitFileNameDisplay.textContent = `📄 已選擇檔案：${file.name}`;
+            splitResultBox.classList.add('hidden');
+            splitBtn.classList.add('hidden');
+            splitRangeOptions.classList.add('hidden');
+            toggleLoader(true, '正在上傳 PDF 檔案，請稍候...');
+
+            const formData = new FormData();
+            formData.append('file', file);
+
+            try {
+                const response = await fetch(`${API_BASE}/api/v1/upload`, {
+                    method: 'POST',
+                    body: formData
+                });
+                const result = await response.json();
+
+                if (response.ok) {
+                    uploadedSplitFileId = result.file_id;
+                    splitFileNameDisplay.textContent = `✅ 檔案已就緒：${file.name}`;
+                    splitBtn.classList.remove('hidden');
+                    splitRangeOptions.classList.remove('hidden');
+                    showToast('PDF 檔案上傳成功', 'success');
+                } else {
+                    showToast(`上傳失敗: ${result.detail || '未知錯誤'}`, 'error');
+                    splitFileNameDisplay.textContent = '點擊此處或拖曳單一 PDF 檔案進行上傳';
+                }
+            } catch (error) {
+                console.error('上傳錯誤:', error);
+                showToast('無法連線至後端伺服器', 'error');
+                splitFileNameDisplay.textContent = '點擊此處或拖曳單一 PDF 檔案進行上傳';
+            } finally {
+                toggleLoader(false);
+            }
+        });
+
+        splitBtn.addEventListener('click', async () => {
+            if (!uploadedSplitFileId) return;
+
+            const isRange = document.getElementById('splitModeRange').checked;
+            let payload = { file_id: uploadedSplitFileId };
+
+            if (isRange) {
+                const start = parseInt(splitStartPage.value);
+                const end = parseInt(splitEndPage.value);
+                if (isNaN(start) || isNaN(end) || start < 1 || end < start) {
+                    showToast('請輸入有效的起始與結束頁碼！', 'error');
+                    return;
+                }
+                payload.start_page = start;
+                payload.end_page = end;
+            }
+
+            toggleLoader(true, '正在分割 PDF 檔案，請稍候...');
+            splitBtn.textContent = '正在分割中...';
+            splitBtn.disabled = true;
+
+            try {
+                const response = await fetch(`${API_BASE}/api/v1/manage/split`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    splitResultBox.classList.remove('hidden');
+                    splitDownloadLink.href = `${API_BASE}${result.download_url}`;
+                    splitBtn.classList.add('hidden');
+                    showToast('PDF 分割成功！', 'success');
+                } else {
+                    showToast(`分割失敗: ${result.detail || '未知的後端錯誤'}`, 'error');
+                }
+            } catch (error) {
+                console.error('分割請求錯誤:', error);
+                showToast('伺服器連線失敗或分割逾時', 'error');
+            } finally {
+                splitBtn.textContent = '開始分割 PDF';
+                splitBtn.disabled = false;
+                toggleLoader(false);
+            }
+        });
+
+        // PDF 編輯功能 JS 邏輯
+        const editFileInput = document.getElementById('editFileInput');
+        const editFileNameDisplay = document.getElementById('editFileNameDisplay');
+        const editPageOptions = document.getElementById('editPageOptions');
+        const editPageBtn = document.getElementById('editPageBtn');
+        const editResultBox = document.getElementById('editResultBox');
+        const editDownloadLink = document.getElementById('editDownloadLink');
+        const editRotateAngle = document.getElementById('editRotateAngle');
+        const editPagesToDelete = document.getElementById('editPagesToDelete');
+
+        let uploadedEditFileId = null;
+
+        editFileInput.addEventListener('change', async (event) => {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            editFileNameDisplay.textContent = `📄 已選擇檔案：${file.name}`;
+            editResultBox.classList.add('hidden');
+            editPageBtn.classList.add('hidden');
+            editPageOptions.classList.add('hidden');
+            toggleLoader(true, '正在上傳 PDF 檔案，請稍候...');
+
+            const formData = new FormData();
+            formData.append('file', file);
+
+            try {
+                const response = await fetch(`${API_BASE}/api/v1/upload`, {
+                    method: 'POST',
+                    body: formData
+                });
+                const result = await response.json();
+
+                if (response.ok) {
+                    uploadedEditFileId = result.file_id;
+                    editFileNameDisplay.textContent = `✅ 檔案已就緒：${file.name}`;
+                    editPageBtn.classList.remove('hidden');
+                    editPageOptions.classList.remove('hidden');
+                    showToast('PDF 檔案上傳成功', 'success');
+                } else {
+                    showToast(`上傳失敗: ${result.detail || '未知錯誤'}`, 'error');
+                }
+            } catch (error) {
+                console.error('上傳錯誤:', error);
+                showToast('無法連線至後端伺服器', 'error');
+            } finally {
+                toggleLoader(false);
+            }
+        });
+
+        editPageBtn.addEventListener('click', async () => {
+            if (!uploadedEditFileId) return;
+
+            const rotate = parseInt(editRotateAngle.value);
+            const deleteStr = editPagesToDelete.value;
+            let pagesToDelete = [];
+            if (deleteStr.trim()) {
+                pagesToDelete = deleteStr.split(',').map(p => parseInt(p.trim())).filter(p => !isNaN(p));
+            }
+
+            let payload = {
+                file_id: uploadedEditFileId,
+                rotate_angle: rotate,
+                pages_to_delete: pagesToDelete
+            };
+
+            toggleLoader(true, '正在編輯 PDF 頁面中，請稍候...');
+            editPageBtn.textContent = '正在編輯中...';
+            editPageBtn.disabled = true;
+
+            try {
+                const response = await fetch(`${API_BASE}/api/v1/manage/edit-pages`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    editResultBox.classList.remove('hidden');
+                    editDownloadLink.href = `${API_BASE}${result.download_url}`;
+                    editPageBtn.classList.add('hidden');
+                    showToast('PDF 編輯成功！', 'success');
+                } else {
+                    showToast(`編輯失敗: ${result.detail || '未知的後端錯誤'}`, 'error');
+                }
+            } catch (error) {
+                console.error('編輯請求錯誤:', error);
+                showToast('伺服器連線失敗或編輯逾時', 'error');
+            } finally {
+                editPageBtn.textContent = '開始編輯 PDF';
+                editPageBtn.disabled = false;
+                toggleLoader(false);
+            }
+        });
+
+        // PDF 安全加密解鎖 JS 邏輯
+        const cryptoFileInput = document.getElementById('cryptoFileInput');
+        const cryptoFileNameDisplay = document.getElementById('cryptoFileNameDisplay');
+        const cryptoPasswordOptions = document.getElementById('cryptoPasswordOptions');
+        const cryptoBtn = document.getElementById('cryptoBtn');
+        const cryptoResultBox = document.getElementById('cryptoResultBox');
+        const cryptoDownloadLink = document.getElementById('cryptoDownloadLink');
+        const cryptoPassword = document.getElementById('cryptoPassword');
+
+        let uploadedCryptoFileId = null;
+
+        window.toggleCryptoInputs = function() {
+            const action = document.querySelector('input[name="cryptoAction"]:checked').value;
+            const label = document.getElementById('cryptoPasswordLabel');
+            if (action === 'protect') {
+                label.textContent = '設定開啟密碼：';
+                cryptoBtn.querySelector('span').textContent = '執行安全加密鎖定';
+            } else {
+                label.textContent = '輸入原開啟密碼以解密：';
+                cryptoBtn.querySelector('span').textContent = '執行密碼解鎖';
+            }
+        }
+
+        cryptoFileInput.addEventListener('change', async (event) => {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            cryptoFileNameDisplay.textContent = `📄 已選擇檔案：${file.name}`;
+            cryptoResultBox.classList.add('hidden');
+            cryptoBtn.classList.add('hidden');
+            cryptoPasswordOptions.classList.add('hidden');
+            toggleLoader(true, '正在上傳 PDF 檔案，請稍候...');
+
+            const formData = new FormData();
+            formData.append('file', file);
+
+            try {
+                const response = await fetch(`${API_BASE}/api/v1/upload`, {
+                    method: 'POST',
+                    body: formData
+                });
+                const result = await response.json();
+
+                if (response.ok) {
+                    uploadedCryptoFileId = result.file_id;
+                    cryptoFileNameDisplay.textContent = `✅ 檔案已就緒：${file.name}`;
+                    cryptoBtn.classList.remove('hidden');
+                    cryptoPasswordOptions.classList.remove('hidden');
+                    toggleCryptoInputs();
+                    showToast('PDF 檔案上傳成功', 'success');
+                } else {
+                    showToast(`上傳失敗: ${result.detail || '未知錯誤'}`, 'error');
+                }
+            } catch (error) {
+                console.error('上傳錯誤:', error);
+                showToast('無法連線至後端伺服器', 'error');
+            } finally {
+                toggleLoader(false);
+            }
+        });
+
+        cryptoBtn.addEventListener('click', async () => {
+            if (!uploadedCryptoFileId) return;
+
+            const action = document.querySelector('input[name="cryptoAction"]:checked').value;
+            const pass = cryptoPassword.value;
+            if (!pass) {
+                showToast('請輸入密碼！', 'error');
+                return;
+            }
+
+            let endpoint = `${API_BASE}/api/v1/manage/protect`;
+            if (action === 'unlock') {
+                endpoint = `${API_BASE}/api/v1/manage/unlock`;
+            }
+
+            toggleLoader(true, '正在處理安全防護中，請稍候...');
+            cryptoBtn.disabled = true;
+
+            try {
+                const response = await fetch(endpoint, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ file_id: uploadedCryptoFileId, password: pass })
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    cryptoResultBox.classList.remove('hidden');
+                    cryptoDownloadLink.href = `${API_BASE}${result.download_url}`;
+                    cryptoBtn.classList.add('hidden');
+                    showToast('安全防護處理成功！', 'success');
+                } else {
+                    showToast(`處理失敗: ${result.detail || '未知的後端錯誤'}`, 'error');
+                }
+            } catch (error) {
+                console.error('安全處理請求錯誤:', error);
+                showToast('伺服器連線失敗或處理逾時', 'error');
+            } finally {
+                cryptoBtn.disabled = false;
+                toggleLoader(false);
+            }
+        });
+
+        // 圖片轉 PDF JS 邏輯
+        const jpgToPdfFileInput = document.getElementById('jpgToPdfFileInput');
+        const jpgToPdfFileNameDisplay = document.getElementById('jpgToPdfFileNameDisplay');
+        const jpgToPdfListContainer = document.getElementById('jpgToPdfListContainer');
+        const jpgToPdfList = document.getElementById('jpgToPdfList');
+        const jpgToPdfBtn = document.getElementById('jpgToPdfBtn');
+        const jpgToPdfResultBox = document.getElementById('jpgToPdfResultBox');
+        const jpgToPdfDownloadLink = document.getElementById('jpgToPdfDownloadLink');
+
+        let uploadedImageFiles = []; // { name, file_id }
+
+        jpgToPdfFileInput.addEventListener('change', async (event) => {
+            const files = Array.from(event.target.files);
+            if (files.length === 0) return;
+
+            jpgToPdfListContainer.classList.remove('hidden');
+            jpgToPdfResultBox.classList.add('hidden');
+            toggleLoader(true, '正在上傳圖片，請稍候...');
+
+            for (const file of files) {
+                const formData = new FormData();
+                formData.append('file', file);
+
+                try {
+                    const response = await fetch(`${API_BASE}/api/v1/upload`, {
+                        method: 'POST',
+                        body: formData
+                    });
+                    const result = await response.json();
+
+                    if (response.ok) {
+                        uploadedImageFiles.push({ name: file.name, file_id: result.file_id });
+                        renderImageList();
+                        showToast(`圖片 ${file.name} 上傳成功`, 'success');
+                    } else {
+                        showToast(`圖片 ${file.name} 上傳失敗: ${result.detail}`, 'error');
+                    }
+                } catch (error) {
+                    console.error('上傳錯誤:', error);
+                    showToast('無法連線至後端伺服器', 'error');
+                }
+            }
+            toggleLoader(false);
+            jpgToPdfFileInput.value = '';
+            if (uploadedImageFiles.length > 0) {
+                jpgToPdfBtn.classList.remove('hidden');
+            }
+        });
+
+        function renderImageList() {
+            jpgToPdfList.innerHTML = '';
+            uploadedImageFiles.forEach((item, index) => {
+                const li = document.createElement('li');
+                li.className = 'px-4 py-2 flex items-center justify-between text-xs';
+                li.innerHTML = `
+                    <span class="font-medium text-gray-700 truncate max-w-md">🖼️ ${item.name}</span>
+                    <button onclick="removeImage(${index})" class="text-red-500 hover:text-red-700 font-semibold bg-red-50 px-2 py-0.5 rounded">移除</button>
+                `;
+                jpgToPdfList.appendChild(li);
+            });
+        }
+
+        window.removeImage = function(index) {
+            uploadedImageFiles.splice(index, 1);
+            renderImageList();
+            if (uploadedImageFiles.length === 0) {
+                jpgToPdfListContainer.classList.add('hidden');
+                jpgToPdfBtn.classList.add('hidden');
+            }
+        }
+
+        jpgToPdfBtn.addEventListener('click', async () => {
+            if (uploadedImageFiles.length === 0) return;
+
+            toggleLoader(true, '正在轉換為 PDF 文件中，請稍候...');
+            jpgToPdfBtn.textContent = '正在轉換中...';
+            jpgToPdfBtn.disabled = true;
+
+            const file_ids = uploadedImageFiles.map(f => f.file_id);
+
+            try {
+                const response = await fetch(`${API_BASE}/api/v1/manage/images-to-pdf`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ file_ids })
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    jpgToPdfResultBox.classList.remove('hidden');
+                    jpgToPdfDownloadLink.href = `${API_BASE}${result.download_url}`;
+                    jpgToPdfBtn.classList.add('hidden');
+                    showToast('圖片轉 PDF 成功！', 'success');
+                } else {
+                    showToast(`轉換失敗: ${result.detail || '未知的後端錯誤'}`, 'error');
+                }
+            } catch (error) {
+                console.error('圖片轉 PDF 請求錯誤:', error);
+                showToast('伺服器連線失敗或處理逾時', 'error');
+            } finally {
+                jpgToPdfBtn.textContent = '開始轉為 PDF';
+                jpgToPdfBtn.disabled = false;
+                toggleLoader(false);
+            }
+        });
+
+        // PDF 加頁碼 JS 邏輯
+        const numFileInput = document.getElementById('numFileInput');
+        const numFileNameDisplay = document.getElementById('numFileNameDisplay');
+        const numPositionOptions = document.getElementById('numPositionOptions');
+        const numBtn = document.getElementById('numBtn');
+        const numResultBox = document.getElementById('numResultBox');
+        const numDownloadLink = document.getElementById('numDownloadLink');
+
+        let uploadedNumFileId = null;
+
+        numFileInput.addEventListener('change', async (event) => {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            numFileNameDisplay.textContent = `📄 已選擇檔案：${file.name}`;
+            numResultBox.classList.add('hidden');
+            numBtn.classList.add('hidden');
+            numPositionOptions.classList.add('hidden');
+            toggleLoader(true, '正在上傳 PDF 檔案，請稍候...');
+
+            const formData = new FormData();
+            formData.append('file', file);
+
+            try {
+                const response = await fetch(`${API_BASE}/api/v1/upload`, {
+                    method: 'POST',
+                    body: formData
+                });
+                const result = await response.json();
+
+                if (response.ok) {
+                    uploadedNumFileId = result.file_id;
+                    numFileNameDisplay.textContent = `✅ 檔案已就緒：${file.name}`;
+                    numBtn.classList.remove('hidden');
+                    numPositionOptions.classList.remove('hidden');
+                    showToast('PDF 檔案上傳成功', 'success');
+                } else {
+                    showToast(`上傳失敗: ${result.detail || '未知錯誤'}`, 'error');
+                }
+            } catch (error) {
+                console.error('上傳錯誤:', error);
+                showToast('無法連線至後端伺服器', 'error');
+            } finally {
+                toggleLoader(false);
+            }
+        });
+
+        numBtn.addEventListener('click', async () => {
+            if (!uploadedNumFileId) return;
+
+            const position = document.querySelector('input[name="numPosition"]:checked').value;
+
+            toggleLoader(true, '正在編排 PDF 頁碼中，請稍候...');
+            numBtn.disabled = true;
+
+            try {
+                const response = await fetch(`${API_BASE}/api/v1/manage/add-page-numbers`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ file_id: uploadedNumFileId, position: position })
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    numResultBox.classList.remove('hidden');
+                    numDownloadLink.href = `${API_BASE}${result.download_url}`;
+                    numBtn.classList.add('hidden');
+                    showToast('PDF 加頁碼成功！', 'success');
+                } else {
+                    showToast(`新增頁碼失敗: ${result.detail || '未知的後端錯誤'}`, 'error');
+                }
+            } catch (error) {
+                console.error('加頁碼請求錯誤:', error);
+                showToast('伺服器連線失敗或處理逾時', 'error');
+            } finally {
+                numBtn.disabled = false;
+                toggleLoader(false);
+            }
+        });
+
+        // PDF 加浮水印 JS 邏輯
+        const wmFileInput = document.getElementById('wmFileInput');
+        const wmFileNameDisplay = document.getElementById('wmFileNameDisplay');
+        const wmTextOptions = document.getElementById('wmTextOptions');
+        const wmText = document.getElementById('wmText');
+        const wmBtn = document.getElementById('wmBtn');
+        const wmResultBox = document.getElementById('wmResultBox');
+        const wmDownloadLink = document.getElementById('wmDownloadLink');
+
+        let uploadedWmFileId = null;
+
+        wmFileInput.addEventListener('change', async (event) => {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            wmFileNameDisplay.textContent = `📄 已選擇檔案：${file.name}`;
+            wmResultBox.classList.add('hidden');
+            wmBtn.classList.add('hidden');
+            wmTextOptions.classList.add('hidden');
+            toggleLoader(true, '正在上傳 PDF 檔案，請稍候...');
+
+            const formData = new FormData();
+            formData.append('file', file);
+
+            try {
+                const response = await fetch(`${API_BASE}/api/v1/upload`, {
+                    method: 'POST',
+                    body: formData
+                });
+                const result = await response.json();
+
+                if (response.ok) {
+                    uploadedWmFileId = result.file_id;
+                    wmFileNameDisplay.textContent = `✅ 檔案已就緒：${file.name}`;
+                    wmBtn.classList.remove('hidden');
+                    wmTextOptions.classList.remove('hidden');
+                    showToast('PDF 檔案上傳成功', 'success');
+                } else {
+                    showToast(`上傳失敗: ${result.detail || '未知錯誤'}`, 'error');
+                }
+            } catch (error) {
+                console.error('上傳錯誤:', error);
+                showToast('無法連線至後端伺服器', 'error');
+            } finally {
+                toggleLoader(false);
+            }
+        });
+
+        wmBtn.addEventListener('click', async () => {
+            if (!uploadedWmFileId) return;
+
+            const text = wmText.value;
+            if (!text.trim()) {
+                showToast('請輸入浮水印文字內容！', 'error');
+                return;
+            }
+
+            toggleLoader(true, '正在新增 PDF 浮水印中，請稍候...');
+            wmBtn.disabled = true;
+
+            try {
+                const response = await fetch(`${API_BASE}/api/v1/manage/add-watermark`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ file_id: uploadedWmFileId, watermark_text: text })
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    wmResultBox.classList.remove('hidden');
+                    wmDownloadLink.href = `${API_BASE}${result.download_url}`;
+                    wmBtn.classList.add('hidden');
+                    showToast('PDF 加浮水印成功！', 'success');
+                } else {
+                    showToast(`新增浮水印失敗: ${result.detail || '未知的後端錯誤'}`, 'error');
+                }
+            } catch (error) {
+                console.error('加浮水印請求錯誤:', error);
+                showToast('伺服器連線失敗或處理逾時', 'error');
+            } finally {
+                wmBtn.disabled = false;
+                toggleLoader(false);
+            }
+        });
+
+        // Office 轉 PDF JS 邏輯
+        const wordToPdfFileInput = document.getElementById('wordToPdfFileInput');
+        const wordToPdfFileNameDisplay = document.getElementById('wordToPdfFileNameDisplay');
+        const wordToPdfBtn = document.getElementById('wordToPdfBtn');
+        const wordToPdfResultBox = document.getElementById('wordToPdfResultBox');
+        const wordToPdfDownloadLink = document.getElementById('wordToPdfDownloadLink');
+
+        let uploadedOfficeFileId = null;
+
+        wordToPdfFileInput.addEventListener('change', async (event) => {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            wordToPdfFileNameDisplay.textContent = `📄 已選擇檔案：${file.name}`;
+            wordToPdfResultBox.classList.add('hidden');
+            wordToPdfBtn.classList.add('hidden');
+            toggleLoader(true, '正在上傳 Office 檔案，請稍候...');
+
+            const formData = new FormData();
+            formData.append('file', file);
+
+            try {
+                const response = await fetch(`${API_BASE}/api/v1/upload`, {
+                    method: 'POST',
+                    body: formData
+                });
+                const result = await response.json();
+
+                if (response.ok) {
+                    uploadedOfficeFileId = result.file_id;
+                    wordToPdfFileNameDisplay.textContent = `✅ 檔案已就緒：${file.name}`;
+                    wordToPdfBtn.classList.remove('hidden');
+                    showToast('Office 檔案上傳成功', 'success');
+                } else {
+                    showToast(`上傳失敗: ${result.detail || '未知錯誤'}`, 'error');
+                }
+            } catch (error) {
+                console.error('上傳錯誤:', error);
+                showToast('無法連線至後端伺服器', 'error');
+            } finally {
+                toggleLoader(false);
+            }
+        });
+
+        wordToPdfBtn.addEventListener('click', async () => {
+            if (!uploadedOfficeFileId) return;
+
+            toggleLoader(true, '正在轉換為 PDF 文件，請稍候...');
+            wordToPdfBtn.disabled = true;
+
+            try {
+                const response = await fetch(`${API_BASE}/api/v1/convert/office-to-pdf`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ file_id: uploadedOfficeFileId })
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    wordToPdfResultBox.classList.remove('hidden');
+                    wordToPdfDownloadLink.href = `${API_BASE}${result.download_url}`;
+                    wordToPdfBtn.classList.add('hidden');
+                    showToast('Office 轉 PDF 成功！', 'success');
+                } else {
+                    showToast(`轉換失敗: ${result.detail || '未知的後端錯誤'}`, 'error');
+                }
+            } catch (error) {
+                console.error('Office轉PDF請求錯誤:', error);
+                showToast('伺服器連線失敗或處理逾時', 'error');
+            } finally {
+                wordToPdfBtn.disabled = false;
+                toggleLoader(false);
+            }
+        });
+
+        // PDF 線上電子簽名 JS 邏輯
+        const sigCanvas = document.getElementById('sigCanvas');
+        const sigClearBtn = document.getElementById('sigClearBtn');
+        const sigSaveBtn = document.getElementById('sigSaveBtn');
+        const sigStatusText = document.getElementById('sigStatusText');
+        const sigPdfUploadSection = document.getElementById('sigPdfUploadSection');
+        const sigFileInput = document.getElementById('sigFileInput');
+        const sigFileNameDisplay = document.getElementById('sigFileNameDisplay');
+        const sigPositionOptions = document.getElementById('sigPositionOptions');
+        const sigSubmitBtn = document.getElementById('sigSubmitBtn');
+        const sigResultBox = document.getElementById('sigResultBox');
+        const sigDownloadLink = document.getElementById('sigDownloadLink');
+
+        const ctx = sigCanvas.getContext('2d');
+        ctx.strokeStyle = '#000000'; // 簽名預設顏色為黑色
+        ctx.lineWidth = 3;
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+
+        let isDrawing = false;
+        let lastX = 0;
+        let lastY = 0;
+        let uploadedSigImageId = null;
+        let uploadedSigPdfId = null;
+
+        // 觸控與滑鼠事件綁定
+        function getCoords(e) {
+            const rect = sigCanvas.getBoundingClientRect();
+            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+            const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+            return {
+                x: clientX - rect.left,
+                y: clientY - rect.top
+            };
+        }
+
+        function startDrawing(e) {
+            isDrawing = true;
+            const coords = getCoords(e);
+            lastX = coords.x;
+            lastY = coords.y;
+            e.preventDefault();
+        }
+
+        function draw(e) {
+            if (!isDrawing) return;
+            const coords = getCoords(e);
+            ctx.beginPath();
+            ctx.moveTo(lastX, lastY);
+            ctx.lineTo(coords.x, coords.y);
+            ctx.stroke();
+            lastX = coords.x;
+            lastY = coords.y;
+            e.preventDefault();
+        }
+
+        function stopDrawing(e) {
+            isDrawing = false;
+        }
+
+        sigCanvas.addEventListener('mousedown', startDrawing);
+        sigCanvas.addEventListener('mousemove', draw);
+        window.addEventListener('mouseup', stopDrawing);
+
+        sigCanvas.addEventListener('touchstart', startDrawing);
+        sigCanvas.addEventListener('touchmove', draw);
+        window.addEventListener('touchend', stopDrawing);
+
+        // 清除畫布
+        sigClearBtn.addEventListener('click', () => {
+            ctx.clearRect(0, 0, sigCanvas.width, sigCanvas.height);
+            sigStatusText.textContent = '手寫完成後，請點擊「確認簽名」進行鎖定';
+            sigStatusText.className = 'text-xs text-gray-500';
+            sigPdfUploadSection.classList.add('hidden');
+            uploadedSigImageId = null;
+        });
+
+        // 確認簽名並上傳到伺服器做 PNG 暫存
+        sigSaveBtn.addEventListener('click', async () => {
+            // Check if canvas is empty
+            const blank = document.createElement('canvas');
+            blank.width = sigCanvas.width;
+            blank.height = sigCanvas.height;
+            if (sigCanvas.toDataURL() === blank.toDataURL()) {
+                showToast('請先繪製手寫簽名！', 'error');
+                return;
+            }
+
+            toggleLoader(true, '正在確認簽名檔案，請稍候...');
+
+            // Convert canvas to blob
+            sigCanvas.toBlob(async (blob) => {
+                const file = new File([blob], "signature.png", { type: "image/png" });
+                const formData = new FormData();
+                formData.append('file', file);
+
+                try {
+                    const response = await fetch(`${API_BASE}/api/v1/upload`, {
+                        method: 'POST',
+                        body: formData
+                    });
+                    const result = await response.json();
+
+                    if (response.ok) {
+                        uploadedSigImageId = result.file_id;
+                        sigStatusText.textContent = '✅ 簽名已鎖定成功！請在下方上傳您的 PDF 檔案。';
+                        sigStatusText.className = 'text-xs text-green-600 font-semibold';
+                        sigPdfUploadSection.classList.remove('hidden');
+                        showToast('簽名檔已就緒', 'success');
+                    } else {
+                        showToast(`儲存簽名失敗: ${result.detail}`, 'error');
+                    }
+                } catch (error) {
+                    console.error('上傳簽名錯誤:', error);
+                    showToast('連線至伺服器失敗', 'error');
+                } finally {
+                    toggleLoader(false);
+                }
+            }, 'image/png');
+        });
+
+        // 上傳要簽名的 PDF 檔案
+        sigFileInput.addEventListener('change', async (event) => {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            sigFileNameDisplay.textContent = `📄 已選擇檔案：${file.name}`;
+            sigResultBox.classList.add('hidden');
+            sigSubmitBtn.classList.add('hidden');
+            sigPositionOptions.classList.add('hidden');
+            toggleLoader(true, '正在上傳合約檔案，請稍候...');
+
+            const formData = new FormData();
+            formData.append('file', file);
+
+            try {
+                const response = await fetch(`${API_BASE}/api/v1/upload`, {
+                    method: 'POST',
+                    body: formData
+                });
+                const result = await response.json();
+
+                if (response.ok) {
+                    uploadedSigPdfId = result.file_id;
+                    sigFileNameDisplay.textContent = `✅ 合約已就緒：${file.name}`;
+                    sigSubmitBtn.classList.remove('hidden');
+                    sigPositionOptions.classList.remove('hidden');
+                    showToast('PDF 檔案上傳成功', 'success');
+                } else {
+                    showToast(`上傳失敗: ${result.detail || '未知錯誤'}`, 'error');
+                }
+            } catch (error) {
+                console.error('上傳錯誤:', error);
+                showToast('無法連線至後端伺服器', 'error');
+            } finally {
+                toggleLoader(false);
+            }
+        });
+
+        // 提交簽字請求
+        sigSubmitBtn.addEventListener('click', async () => {
+            if (!uploadedSigImageId || !uploadedSigPdfId) return;
+
+            const position = document.querySelector('input[name="sigPosition"]:checked').value;
+
+            toggleLoader(true, '正在將簽名寫入 PDF 文件中，請稍候...');
+            sigSubmitBtn.disabled = true;
+
+            try {
+                const response = await fetch(`${API_BASE}/api/v1/manage/sign-pdf`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        pdf_file_id: uploadedSigPdfId,
+                        sig_file_id: uploadedSigImageId,
+                        position: position
+                    })
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    sigResultBox.classList.remove('hidden');
+                    sigDownloadLink.href = `${API_BASE}${result.download_url}`;
+                    sigSubmitBtn.classList.add('hidden');
+                    showToast('PDF 簽署成功！', 'success');
+                } else {
+                    showToast(`簽署失敗: ${result.detail || '未知的後端錯誤'}`, 'error');
+                }
+            } catch (error) {
+                console.error('簽名請求錯誤:', error);
+                showToast('伺服器連線失敗或簽署逾時', 'error');
+            } finally {
+                sigSubmitBtn.disabled = false;
+                toggleLoader(false);
+            }
+        });
+
+        // PDF 轉 Excel JS 邏輯
+        const excelFileInput = document.getElementById('excelFileInput');
+        const excelFileNameDisplay = document.getElementById('excelFileNameDisplay');
+        const excelSubmitBtn = document.getElementById('excelSubmitBtn');
+        const excelResultBox = document.getElementById('excelResultBox');
+        const excelDownloadLink = document.getElementById('excelDownloadLink');
+
+        let uploadedExcelFileId = null;
+
+        excelFileInput.addEventListener('change', async (event) => {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            excelFileNameDisplay.textContent = `📄 已選擇檔案：${file.name}`;
+            excelResultBox.classList.add('hidden');
+            excelSubmitBtn.classList.add('hidden');
+            toggleLoader(true, '正在上傳 PDF 檔案，請稍候...');
+
+            const formData = new FormData();
+            formData.append('file', file);
+
+            try {
+                const response = await fetch(`${API_BASE}/api/v1/upload`, {
+                    method: 'POST',
+                    body: formData
+                });
+                const result = await response.json();
+
+                if (response.ok) {
+                    uploadedExcelFileId = result.file_id;
+                    excelFileNameDisplay.textContent = `✅ 檔案已就緒：${file.name}`;
+                    excelSubmitBtn.classList.remove('hidden');
+                    showToast('PDF 檔案上傳成功', 'success');
+                } else {
+                    showToast(`上傳失敗: ${result.detail || '未知錯誤'}`, 'error');
+                }
+            } catch (error) {
+                console.error('上傳錯誤:', error);
+                showToast('無法連線至後端伺服器', 'error');
+            } finally {
+                toggleLoader(false);
+            }
+        });
+
+        excelSubmitBtn.addEventListener('click', async () => {
+            if (!uploadedExcelFileId) return;
+
+            toggleLoader(true, '正在提取表格資料並轉換為 Excel，請稍候...');
+            excelSubmitBtn.disabled = true;
+
+            try {
+                const response = await fetch(`${API_BASE}/api/v1/convert/pdf-to-excel`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ file_id: uploadedExcelFileId })
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    excelResultBox.classList.remove('hidden');
+                    excelDownloadLink.href = `${API_BASE}${result.download_url}`;
+                    excelSubmitBtn.classList.add('hidden');
+                    showToast('PDF 轉 Excel 成功！', 'success');
+                } else {
+                    showToast(`轉換失敗: ${result.detail || '未知的後端錯誤'}`, 'error');
+                }
+            } catch (error) {
+                console.error('PDF轉Excel請求錯誤:', error);
+                showToast('伺服器連線失敗或轉換逾時', 'error');
+            } finally {
+                excelSubmitBtn.disabled = false;
+                toggleLoader(false);
+            }
+        });
+
+        // PDF 修復 JS 邏輯
+        const repairFileInput = document.getElementById('repairFileInput');
+        const repairFileNameDisplay = document.getElementById('repairFileNameDisplay');
+        const repairSubmitBtn = document.getElementById('repairSubmitBtn');
+        const repairResultBox = document.getElementById('repairResultBox');
+        const repairDownloadLink = document.getElementById('repairDownloadLink');
+
+        let uploadedRepairFileId = null;
+
+        repairFileInput.addEventListener('change', async (event) => {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            repairFileNameDisplay.textContent = `📄 已選擇檔案：${file.name}`;
+            repairResultBox.classList.add('hidden');
+            repairSubmitBtn.classList.add('hidden');
+            toggleLoader(true, '正在上傳 PDF 檔案，請稍候...');
+
+            const formData = new FormData();
+            formData.append('file', file);
+
+            try {
+                const response = await fetch(`${API_BASE}/api/v1/upload`, {
+                    method: 'POST',
+                    body: formData
+                });
+                const result = await response.json();
+
+                if (response.ok) {
+                    uploadedRepairFileId = result.file_id;
+                    repairFileNameDisplay.textContent = `✅ 檔案已就緒：${file.name}`;
+                    repairSubmitBtn.classList.remove('hidden');
+                    showToast('PDF 檔案上傳成功', 'success');
+                } else {
+                    showToast(`上傳失敗: ${result.detail || '未知錯誤'}`, 'error');
+                }
+            } catch (error) {
+                console.error('上傳錯誤:', error);
+                showToast('無法連線至後端伺服器', 'error');
+            } finally {
+                toggleLoader(false);
+            }
+        });
+
+        repairSubmitBtn.addEventListener('click', async () => {
+            if (!uploadedRepairFileId) return;
+
+            toggleLoader(true, '正在進行壞軌分析與 PDF 修復中，請稍候...');
+            repairSubmitBtn.disabled = true;
+
+            try {
+                const response = await fetch(`${API_BASE}/api/v1/manage/repair-pdf`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ file_id: uploadedRepairFileId })
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    repairResultBox.classList.remove('hidden');
+                    repairDownloadLink.href = `${API_BASE}${result.download_url}`;
+                    repairSubmitBtn.classList.add('hidden');
+                    showToast('PDF 修復完成！', 'success');
+                } else {
+                    showToast(`修復失敗: ${result.detail || '未知的後端錯誤'}`, 'error');
+                }
+            } catch (error) {
+                console.error('PDF修復請求錯誤:', error);
+                showToast('伺服器連線失敗或轉換逾時', 'error');
+            } finally {
+                repairSubmitBtn.disabled = false;
+                toggleLoader(false);
+            }
+        });
+
+        // PDF 頁面重整與排序 JS 邏輯
+        const orgFileInput = document.getElementById('orgFileInput');
+        const orgFileNameDisplay = document.getElementById('orgFileNameDisplay');
+        const orgPagesWrapper = document.getElementById('orgPagesWrapper');
+        const orgThumbnailContainer = document.getElementById('orgThumbnailContainer');
+        const orgSubmitBtn = document.getElementById('orgSubmitBtn');
+        const orgResultBox = document.getElementById('orgResultBox');
+        const orgDownloadLink = document.getElementById('orgDownloadLink');
+
+        let uploadedOrgFileId = null;
+        let draggedItem = null;
+
+        orgFileInput.addEventListener('change', async (event) => {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            orgFileNameDisplay.textContent = `📄 已選擇檔案：${file.name}`;
+            orgResultBox.classList.add('hidden');
+            orgSubmitBtn.classList.add('hidden');
+            orgPagesWrapper.classList.add('hidden');
+            toggleLoader(true, '正在解析並下載 PDF 頁面縮圖中，請稍候...');
+
+            const formData = new FormData();
+            formData.append('file', file);
+
+            try {
+                // 1. Upload file
+                const uploadRes = await fetch(`${API_BASE}/api/v1/upload`, {
+                    method: 'POST',
+                    body: formData
+                });
+                const uploadResult = await uploadRes.json();
+
+                if (!uploadRes.ok) {
+                    showToast(`上傳失敗: ${uploadResult.detail}`, 'error');
+                    toggleLoader(false);
+                    return;
+                }
+
+                uploadedOrgFileId = uploadResult.file_id;
+
+                // 2. Fetch thumbnails
+                const thumbRes = await fetch(`${API_BASE}/api/v1/manage/get-thumbnails`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ file_id: uploadedOrgFileId })
+                });
+                const thumbResult = await thumbRes.json();
+
+                if (thumbRes.ok) {
+                    orgThumbnailContainer.innerHTML = '';
+                    thumbResult.thumbnails.forEach((url, idx) => {
+                        const pageNum = idx + 1;
+                        const card = document.createElement('div');
+                        card.className = 'bg-white border border-gray-200 rounded-lg p-2 shadow-sm flex flex-col items-center space-y-2 cursor-move relative transition select-none';
+                        card.draggable = true;
+                        card.dataset.pageNum = pageNum;
+                        card.innerHTML = `
+                            <img src="${API_BASE}${url}" alt="Page ${pageNum}" class="w-full h-auto object-contain border border-gray-100 rounded">
+                            <span class="text-xs font-bold text-gray-500">第 ${pageNum} 頁</span>
+                            <button onclick="this.parentElement.remove(); checkOrgSubmitBtnState();" class="absolute -top-1 -right-1 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs font-bold hover:bg-red-600 transition shadow">×</button>
+                        `;
+                        addDragListeners(card);
+                        orgThumbnailContainer.appendChild(card);
+                    });
+                    
+                    orgFileNameDisplay.textContent = `✅ 檔案解析完成：${file.name}`;
+                    orgPagesWrapper.classList.remove('hidden');
+                    checkOrgSubmitBtnState();
+                    showToast('PDF 縮圖載入完畢', 'success');
+                } else {
+                    showToast(`縮圖解析失敗: ${thumbResult.detail}`, 'error');
+                }
+            } catch (error) {
+                console.error('載入重整錯誤:', error);
+                showToast('無法連線至伺服器或連線逾時', 'error');
+            } finally {
+                toggleLoader(false);
+            }
+        });
+
+        function checkOrgSubmitBtnState() {
+            const items = orgThumbnailContainer.children;
+            if (items.length > 0) {
+                orgSubmitBtn.classList.remove('hidden');
+            } else {
+                orgSubmitBtn.classList.add('hidden');
+            }
+        }
+
+        window.checkOrgSubmitBtnState = checkOrgSubmitBtnState;
+
+        function addDragListeners(el) {
+            el.addEventListener('dragstart', (e) => {
+                draggedItem = el;
+                e.dataTransfer.effectAllowed = 'move';
+                el.classList.add('opacity-50');
+            });
+            el.addEventListener('dragend', () => {
+                draggedItem = null;
+                el.classList.remove('opacity-50');
+            });
+            el.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                e.dataTransfer.dropEffect = 'move';
+            });
+            el.addEventListener('drop', (e) => {
+                e.preventDefault();
+                if (draggedItem && draggedItem !== el) {
+                    const container = orgThumbnailContainer;
+                    const allChildren = Array.from(container.children);
+                    const draggedIdx = allChildren.indexOf(draggedItem);
+                    const targetIdx = allChildren.indexOf(el);
+                    
+                    if (draggedIdx < targetIdx) {
+                        container.insertBefore(draggedItem, el.nextSibling);
+                    } else {
+                        container.insertBefore(draggedItem, el);
+                    }
+                }
+            });
+        }
+
+        orgSubmitBtn.addEventListener('click', async () => {
+            if (!uploadedOrgFileId) return;
+
+            const items = orgThumbnailContainer.children;
+            if (items.length === 0) {
+                showToast('請至少保留一頁 PDF 頁面！', 'error');
+                return;
+            }
+
+            const pageOrder = Array.from(items).map(item => parseInt(item.dataset.pageNum));
+
+            toggleLoader(true, '正在重新排列與組裝新的 PDF 文件中，請稍候...');
+            orgSubmitBtn.disabled = true;
+
+            try {
+                const response = await fetch(`${API_BASE}/api/v1/manage/organize-pdf`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        file_id: uploadedOrgFileId,
+                        page_order: pageOrder
+                    })
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    orgResultBox.classList.remove('hidden');
+                    orgDownloadLink.href = `${API_BASE}${result.download_url}`;
+                    orgSubmitBtn.classList.add('hidden');
+                    showToast('PDF 重整成功！', 'success');
+                } else {
+                    showToast(`重整失敗: ${result.detail || '未知的後端錯誤'}`, 'error');
+                }
+            } catch (error) {
+                console.error('PDF重整請求錯誤:', error);
+                showToast('伺服器連線失敗或轉換逾時', 'error');
+            } finally {
+                orgSubmitBtn.disabled = false;
+                toggleLoader(false);
+            }
+        });
+    </script>
+</body>
+</html>
