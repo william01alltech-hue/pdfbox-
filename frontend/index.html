@@ -892,6 +892,7 @@
                     downloadLink.href = `${API_BASE}${result.download_url}`;
                     downloadLink.classList.remove('hidden');
                     showToast('PDF 合併成功！', 'success');
+                    trackEvent('convert_success', { tool: 'merge_pdf' });
                 } else {
                     showToast(`合併失敗: ${result.detail}`, 'error');
                 }
@@ -966,6 +967,7 @@
                     imageResultBox.classList.remove('hidden');
                     imageDownloadLink.href = `${API_BASE}${result.download_url}`;
                     showToast('PDF 轉圖片成功！', 'success');
+                    trackEvent('convert_success', { tool: 'pdf_to_images' });
                 } else {
                     showToast(`轉換失敗: ${result.detail}`, 'error');
                 }
@@ -1051,6 +1053,7 @@
                     wordDownloadLink.href = `${API_BASE}${result.download_url}`;
                     convertWordBtn.classList.add('hidden');
                     showToast('PDF 轉 Word 成功！', 'success');
+                    trackEvent('convert_success', { tool: 'pdf_to_word' });
                 } else {
                     showToast(`轉檔失敗: ${result.detail || '未知的後端錯誤'}`, 'error');
                 }
@@ -1130,11 +1133,11 @@
                     compressDownloadLink.href = `${API_BASE}${result.download_url}`;
                     compressBtn.classList.add('hidden');
                     showToast('PDF 壓縮成功！', 'success');
+                    trackEvent('convert_success', { tool: 'compress_pdf' });
                 } else {
                     showToast(`壓縮失敗: ${result.detail || '未知的後端錯誤'}`, 'error');
                 }
             } catch (error) {
-                print(error);
                 console.error('壓縮請求錯誤:', error);
                 showToast('伺服器連線失敗或壓縮逾時', 'error');
             } finally {
@@ -1235,6 +1238,7 @@
                     splitDownloadLink.href = `${API_BASE}${result.download_url}`;
                     splitBtn.classList.add('hidden');
                     showToast('PDF 分割成功！', 'success');
+                    trackEvent('convert_success', { tool: 'split_pdf' });
                 } else {
                     showToast(`分割失敗: ${result.detail || '未知的後端錯誤'}`, 'error');
                 }
@@ -1331,6 +1335,7 @@
                     editDownloadLink.href = `${API_BASE}${result.download_url}`;
                     editPageBtn.classList.add('hidden');
                     showToast('PDF 編輯成功！', 'success');
+                    trackEvent('convert_success', { tool: 'edit_pages' });
                 } else {
                     showToast(`編輯失敗: ${result.detail || '未知的後端錯誤'}`, 'error');
                 }
@@ -1437,6 +1442,7 @@
                     cryptoDownloadLink.href = `${API_BASE}${result.download_url}`;
                     cryptoBtn.classList.add('hidden');
                     showToast('安全防護處理成功！', 'success');
+                    trackEvent('convert_success', { tool: action === 'unlock' ? 'unlock_pdf' : 'protect_pdf' });
                 } else {
                     showToast(`處理失敗: ${result.detail || '未知的後端錯誤'}`, 'error');
                 }
@@ -1543,6 +1549,7 @@
                     jpgToPdfDownloadLink.href = `${API_BASE}${result.download_url}`;
                     jpgToPdfBtn.classList.add('hidden');
                     showToast('圖片轉 PDF 成功！', 'success');
+                    trackEvent('convert_success', { tool: 'images_to_pdf' });
                 } else {
                     showToast(`轉換失敗: ${result.detail || '未知的後端錯誤'}`, 'error');
                 }
@@ -1625,6 +1632,7 @@
                     numDownloadLink.href = `${API_BASE}${result.download_url}`;
                     numBtn.classList.add('hidden');
                     showToast('PDF 加頁碼成功！', 'success');
+                    trackEvent('convert_success', { tool: 'add_page_numbers' });
                 } else {
                     showToast(`新增頁碼失敗: ${result.detail || '未知的後端錯誤'}`, 'error');
                 }
@@ -1711,6 +1719,7 @@
                     wmDownloadLink.href = `${API_BASE}${result.download_url}`;
                     wmBtn.classList.add('hidden');
                     showToast('PDF 加浮水印成功！', 'success');
+                    trackEvent('convert_success', { tool: 'add_watermark' });
                 } else {
                     showToast(`新增浮水印失敗: ${result.detail || '未知的後端錯誤'}`, 'error');
                 }
@@ -1787,6 +1796,7 @@
                     wordToPdfDownloadLink.href = `${API_BASE}${result.download_url}`;
                     wordToPdfBtn.classList.add('hidden');
                     showToast('Office 轉 PDF 成功！', 'success');
+                    trackEvent('convert_success', { tool: 'office_to_pdf' });
                 } else {
                     showToast(`轉換失敗: ${result.detail || '未知的後端錯誤'}`, 'error');
                 }
@@ -1985,6 +1995,7 @@
                     sigDownloadLink.href = `${API_BASE}${result.download_url}`;
                     sigSubmitBtn.classList.add('hidden');
                     showToast('PDF 簽署成功！', 'success');
+                    trackEvent('convert_success', { tool: 'sign_pdf' });
                 } else {
                     showToast(`簽署失敗: ${result.detail || '未知的後端錯誤'}`, 'error');
                 }
@@ -2061,6 +2072,7 @@
                     excelDownloadLink.href = `${API_BASE}${result.download_url}`;
                     excelSubmitBtn.classList.add('hidden');
                     showToast('PDF 轉 Excel 成功！', 'success');
+                    trackEvent('convert_success', { tool: 'pdf_to_excel' });
                 } else {
                     showToast(`轉換失敗: ${result.detail || '未知的後端錯誤'}`, 'error');
                 }
@@ -2137,6 +2149,7 @@
                     repairDownloadLink.href = `${API_BASE}${result.download_url}`;
                     repairSubmitBtn.classList.add('hidden');
                     showToast('PDF 修復完成！', 'success');
+                    trackEvent('convert_success', { tool: 'repair_pdf' });
                 } else {
                     showToast(`修復失敗: ${result.detail || '未知的後端錯誤'}`, 'error');
                 }
@@ -2303,6 +2316,7 @@
                     orgDownloadLink.href = `${API_BASE}${result.download_url}`;
                     orgSubmitBtn.classList.add('hidden');
                     showToast('PDF 重整成功！', 'success');
+                    trackEvent('convert_success', { tool: 'organize_pdf' });
                 } else {
                     showToast(`重整失敗: ${result.detail || '未知的後端錯誤'}`, 'error');
                 }
