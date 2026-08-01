@@ -24,6 +24,11 @@
       }
     }
     </script>
+    <!-- PDF.js library for client-side instant PDF rendering -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <script>
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    </script>
     <!-- Google Analytics (GA4) -->
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-XXXXXXXXXX"></script>
     <script>
@@ -587,6 +592,19 @@
                             <input type="radio" name="sigPosition" value="center">
                             <span>中央</span>
                         </label>
+                    </div>
+                <!-- 即時 PDF 視覺化簽名預覽區 -->
+                <div id="sigPreviewWrapper" class="mt-4 hidden border border-purple-200 rounded-xl p-4 bg-purple-50/50 flex flex-col items-center">
+                    <span class="text-xs font-bold text-purple-700 mb-2 flex items-center gap-1">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                        簽名位置即時視覺預覽 (PDF.js)
+                    </span>
+                    <div class="relative inline-block border border-gray-300 rounded shadow-md overflow-hidden bg-white max-w-full">
+                        <canvas id="sigPdfCanvas" class="max-w-full h-auto block"></canvas>
+                        <!-- 簽名疊加印章 -->
+                        <div id="sigOverlayStamp" class="absolute transition-all duration-200 border-2 border-dashed border-purple-500 bg-purple-500/20 pointer-events-none rounded flex items-center justify-center">
+                            <img id="sigOverlayImg" src="" class="max-h-full max-w-full object-contain">
+                        </div>
                     </div>
                 </div>
 
@@ -1927,6 +1945,7 @@
                         sigStatusText.textContent = '✅ 簽名已鎖定成功！請在下方上傳您的 PDF 檔案。';
                         sigStatusText.className = 'text-xs text-green-600 font-semibold';
                         sigPdfUploadSection.classList.remove('hidden');
+                        renderSigPreview();
                         showToast('簽名檔已就緒', 'success');
                     } else {
                         showToast(`儲存簽名失敗: ${result.detail}`, 'error');
@@ -1940,10 +1959,88 @@
             }, 'image/png');
         });
 
+        let currentSigPdfDoc = null;
+        let currentSigFile = null;
+
+        async function renderSigPreview() {
+            const sigPreviewWrapper = document.getElementById('sigPreviewWrapper');
+            const sigPdfCanvas = document.getElementById('sigPdfCanvas');
+            const sigOverlayStamp = document.getElementById('sigOverlayStamp');
+            const sigOverlayImg = document.getElementById('sigOverlayImg');
+
+            if (!currentSigFile || !sigCanvas) return;
+
+            try {
+                if (!currentSigPdfDoc) {
+                    const arrayBuffer = await currentSigFile.arrayBuffer();
+                    currentSigPdfDoc = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+                }
+
+                const pageTargetSelect = document.getElementById('sigPageTargetSelect');
+                const targetType = pageTargetSelect ? pageTargetSelect.value : 'last';
+                let pageNum = 1;
+
+                if (targetType === 'last') {
+                    pageNum = currentSigPdfDoc.numPages;
+                } else if (targetType === 'first') {
+                    pageNum = 1;
+                } else if (targetType === 'all') {
+                    pageNum = 1;
+                }
+
+                const page = await currentSigPdfDoc.getPage(pageNum);
+                const viewport = page.getViewport({ scale: 0.8 });
+
+                sigPdfCanvas.width = viewport.width;
+                sigPdfCanvas.height = viewport.height;
+                const ctx = sigPdfCanvas.getContext('2d');
+
+                await page.render({ canvasContext: ctx, viewport: viewport }).promise;
+
+                sigOverlayImg.src = sigCanvas.toDataURL();
+
+                const positionRadio = document.querySelector('input[name="sigPosition"]:checked');
+                const position = positionRadio ? positionRadio.value : 'bottom_right';
+
+                const stampW = Math.min(120, viewport.width * 0.25);
+                const stampH = stampW * 0.53;
+                sigOverlayStamp.style.width = `${stampW}px`;
+                sigOverlayStamp.style.height = `${stampH}px`;
+                sigOverlayStamp.style.transform = 'none';
+
+                if (position === 'bottom_left') {
+                    sigOverlayStamp.style.left = '20px';
+                    sigOverlayStamp.style.top = `${viewport.height - stampH - 20}px`;
+                } else if (position === 'center') {
+                    sigOverlayStamp.style.left = `${(viewport.width - stampW) / 2}px`;
+                    sigOverlayStamp.style.top = `${(viewport.height - stampH) / 2}px`;
+                } else {
+                    sigOverlayStamp.style.left = `${viewport.width - stampW - 20}px`;
+                    sigOverlayStamp.style.top = `${viewport.height - stampH - 20}px`;
+                }
+
+                sigPreviewWrapper.classList.remove('hidden');
+            } catch (err) {
+                console.warn('PDF.js 簽名預覽渲染失敗:', err);
+            }
+        }
+
+        // 綁定動態選擇變化事件
+        document.querySelectorAll('input[name="sigPosition"]').forEach(radio => {
+            radio.addEventListener('change', renderSigPreview);
+        });
+        const sigPageTargetSelectEl = document.getElementById('sigPageTargetSelect');
+        if (sigPageTargetSelectEl) {
+            sigPageTargetSelectEl.addEventListener('change', renderSigPreview);
+        }
+
         // 上傳要簽名的 PDF 檔案
         sigFileInput.addEventListener('change', async (event) => {
             const file = event.target.files[0];
             if (!file) return;
+
+            currentSigFile = file;
+            currentSigPdfDoc = null;
 
             sigFileNameDisplay.textContent = `📄 已選擇檔案：${file.name}`;
             sigResultBox.classList.add('hidden');
@@ -1966,6 +2063,7 @@
                     sigFileNameDisplay.textContent = `✅ 合約已就緒：${file.name}`;
                     sigSubmitBtn.classList.remove('hidden');
                     sigPositionOptions.classList.remove('hidden');
+                    renderSigPreview();
                     showToast('PDF 檔案上傳成功', 'success');
                 } else {
                     showToast(`上傳失敗: ${result.detail || '未知錯誤'}`, 'error');
@@ -2195,13 +2293,13 @@
             orgResultBox.classList.add('hidden');
             orgSubmitBtn.classList.add('hidden');
             orgPagesWrapper.classList.add('hidden');
-            toggleLoader(true, '正在解析並下載 PDF 頁面縮圖中，請稍候...');
+            toggleLoader(true, '正在即時解析 PDF 頁面縮圖中，請稍候...');
 
             const formData = new FormData();
             formData.append('file', file);
 
             try {
-                // 1. Upload file
+                // 1. 後端上傳取得 file_id
                 const uploadRes = await fetch(`${API_BASE}/api/v1/upload`, {
                     method: 'POST',
                     body: formData
@@ -2216,37 +2314,79 @@
 
                 uploadedOrgFileId = uploadResult.file_id;
 
-                // 2. Fetch thumbnails
-                const thumbRes = await fetch(`${API_BASE}/api/v1/manage/get-thumbnails`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ file_id: uploadedOrgFileId })
-                });
-                const thumbResult = await thumbRes.json();
-
-                if (thumbRes.ok) {
+                // 2. 嘗試使用 PDF.js 進行瀏覽器本地超快 Canvas 渲染
+                let clientRenderSuccess = false;
+                try {
+                    const arrayBuffer = await file.arrayBuffer();
+                    const pdfDoc = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
                     orgThumbnailContainer.innerHTML = '';
-                    thumbResult.thumbnails.forEach((url, idx) => {
-                        const pageNum = idx + 1;
+
+                    for (let pageNum = 1; pageNum <= pdfDoc.numPages; pageNum++) {
+                        const page = await pdfDoc.getPage(pageNum);
+                        const viewport = page.getViewport({ scale: 0.35 });
+                        const canvas = document.createElement('canvas');
+                        canvas.width = viewport.width;
+                        canvas.height = viewport.height;
+                        const ctx = canvas.getContext('2d');
+
+                        await page.render({ canvasContext: ctx, viewport: viewport }).promise;
+                        const imgUrl = canvas.toDataURL('image/png');
+
                         const card = document.createElement('div');
                         card.className = 'bg-white border border-gray-200 rounded-lg p-2 shadow-sm flex flex-col items-center space-y-2 cursor-move relative transition select-none';
                         card.draggable = true;
                         card.dataset.pageNum = pageNum;
                         card.innerHTML = `
-                            <img src="${API_BASE}${url}" alt="Page ${pageNum}" class="w-full h-auto object-contain border border-gray-100 rounded">
+                            <img src="${imgUrl}" alt="Page ${pageNum}" class="w-full h-auto object-contain border border-gray-100 rounded">
                             <span class="text-xs font-bold text-gray-500">第 ${pageNum} 頁</span>
                             <button onclick="this.parentElement.remove(); checkOrgSubmitBtnState();" class="absolute -top-1 -right-1 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs font-bold hover:bg-red-600 transition shadow">×</button>
                         `;
                         addDragListeners(card);
                         orgThumbnailContainer.appendChild(card);
-                    });
-                    
-                    orgFileNameDisplay.textContent = `✅ 檔案解析完成：${file.name}`;
+                    }
+
+                    clientRenderSuccess = true;
+                    orgFileNameDisplay.textContent = `✅ 頁面即時解析完成（共 ${pdfDoc.numPages} 頁）：${file.name}`;
                     orgPagesWrapper.classList.remove('hidden');
                     checkOrgSubmitBtnState();
-                    showToast('PDF 縮圖載入完畢', 'success');
-                } else {
-                    showToast(`縮圖解析失敗: ${thumbResult.detail}`, 'error');
+                    showToast('PDF 縮圖即時渲染完畢！', 'success');
+                } catch (pdfErr) {
+                    console.warn('PDF.js 本地渲染失敗，回退至後端渲染:', pdfErr);
+                }
+
+                // 3. 若前端渲染失敗，自動回退至後端 get-thumbnails 伺服器渲染
+                if (!clientRenderSuccess) {
+                    const thumbRes = await fetch(`${API_BASE}/api/v1/manage/get-thumbnails`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ file_id: uploadedOrgFileId })
+                    });
+                    const thumbResult = await thumbRes.json();
+
+                    if (thumbRes.ok) {
+                        orgThumbnailContainer.innerHTML = '';
+                        thumbResult.thumbnails.forEach((url, idx) => {
+                            const pageNum = idx + 1;
+                            const card = document.createElement('div');
+                            card.className = 'bg-white border border-gray-200 rounded-lg p-2 shadow-sm flex flex-col items-center space-y-2 cursor-move relative transition select-none';
+                            card.draggable = true;
+                            card.dataset.pageNum = pageNum;
+                            card.innerHTML = `
+                                <img src="${API_BASE}${url}" alt="Page ${pageNum}" class="w-full h-auto object-contain border border-gray-100 rounded">
+                                <span class="text-xs font-bold text-gray-500">第 ${pageNum} 頁</span>
+                                <button onclick="this.parentElement.remove(); checkOrgSubmitBtnState();" class="absolute -top-1 -right-1 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs font-bold hover:bg-red-600 transition shadow">×</button>
+                            `;
+                            addDragListeners(card);
+                            orgThumbnailContainer.appendChild(card);
+                        });
+                        
+                        orgFileNameDisplay.textContent = `✅ 檔案解析完成：${file.name}`;
+                        orgPagesWrapper.classList.remove('hidden');
+                        checkOrgSubmitBtnState();
+                        showToast('PDF 縮圖載入完畢', 'success');
+                    } else {
+                        showToast(`縮圖解析失敗: ${thumbResult.detail}`, 'error');
+                    }
                 }
             } catch (error) {
                 console.error('載入重整錯誤:', error);
