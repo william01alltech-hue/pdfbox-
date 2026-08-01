@@ -869,22 +869,41 @@ async def sign_pdf_route(data: SignPdfRequest):
 
     try:
         doc = fitz.open(pdf_path)
-        last_page = doc[-1] # Target: Last page
-        page_w = last_page.rect.width
-        page_h = last_page.rect.height
+        total_p = len(doc)
+        pt = (data.page_target or "last").strip().lower()
 
-        # Position mapping
+        target_pages = []
+        if pt == "all":
+            target_pages = list(doc)
+        elif pt == "first":
+            target_pages = [doc[0]]
+        elif pt == "last":
+            target_pages = [doc[-1]]
+        else:
+            try:
+                p_nums = [int(x.strip()) for x in pt.split(",") if x.strip().isdigit()]
+                for p_num in p_nums:
+                    if 1 <= p_num <= total_p:
+                        target_pages.append(doc[p_num - 1])
+            except Exception:
+                pass
+            if not target_pages:
+                target_pages = [doc[-1]]
+
         # Stamp dimensions: 150w x 80h
         sw, sh = 150, 80
-        if data.position == "bottom_left":
-            rect = fitz.Rect(50, page_h - 120, 50 + sw, page_h - 120 + sh)
-        elif data.position == "center":
-            rect = fitz.Rect((page_w - sw) / 2.0, (page_h - sh) / 2.0, (page_w - sw) / 2.0 + sw, (page_h - sh) / 2.0 + sh)
-        else: # bottom_right 預設
-            rect = fitz.Rect(page_w - 200, page_h - 120, page_w - 200 + sw, page_h - 120 + sh)
+        for target_page in target_pages:
+            page_w = target_page.rect.width
+            page_h = target_page.rect.height
+            if data.position == "bottom_left":
+                rect = fitz.Rect(50, page_h - 120, 50 + sw, page_h - 120 + sh)
+            elif data.position == "center":
+                rect = fitz.Rect((page_w - sw) / 2.0, (page_h - sh) / 2.0, (page_w - sw) / 2.0 + sw, (page_h - sh) / 2.0 + sh)
+            else: # bottom_right 預設
+                rect = fitz.Rect(page_w - 200, page_h - 120, page_w - 200 + sw, page_h - 120 + sh)
 
-        # Place image signature onto PDF
-        last_page.insert_image(rect, filename=sig_path)
+            target_page.insert_image(rect, filename=sig_path)
+
         doc.save(output_path)
         doc.close()
 

@@ -563,21 +563,31 @@
                     <p id="sigFileNameDisplay" class="text-sm font-medium text-gray-700">點擊此處上傳需要簽署的 PDF 文件</p>
                 </div>
 
-                <!-- 簽名位置選擇 -->
-                <div id="sigPositionOptions" class="mt-4 hidden p-4 bg-gray-50 rounded-xl border border-gray-100 flex items-center space-x-4">
-                    <span class="text-sm font-semibold text-gray-700">簽名位置（最後一頁）：</span>
-                    <label class="flex items-center space-x-1 text-sm text-gray-600">
-                        <input type="radio" name="sigPosition" value="bottom_right" checked>
-                        <span>右下角</span>
-                    </label>
-                    <label class="flex items-center space-x-1 text-sm text-gray-600">
-                        <input type="radio" name="sigPosition" value="bottom_left">
-                        <span>左下角</span>
-                    </label>
-                    <label class="flex items-center space-x-1 text-sm text-gray-600">
-                        <input type="radio" name="sigPosition" value="center">
-                        <span>中央</span>
-                    </label>
+                <!-- 簽名位置與頁數選擇 -->
+                <div id="sigPositionOptions" class="mt-4 hidden p-4 bg-gray-50 rounded-xl border border-gray-100 flex flex-col md:flex-row md:items-center justify-between gap-3">
+                    <div class="flex items-center space-x-2">
+                        <span class="text-sm font-semibold text-gray-700">簽名頁數：</span>
+                        <select id="sigPageTargetSelect" class="text-sm border border-gray-300 rounded-lg p-1.5 bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-purple-500">
+                            <option value="last" selected>僅最後一頁</option>
+                            <option value="all">所有頁面</option>
+                            <option value="first">僅第一頁</option>
+                        </select>
+                    </div>
+                    <div class="flex items-center space-x-3">
+                        <span class="text-sm font-semibold text-gray-700">簽名位置：</span>
+                        <label class="flex items-center space-x-1 text-sm text-gray-600">
+                            <input type="radio" name="sigPosition" value="bottom_right" checked>
+                            <span>右下角</span>
+                        </label>
+                        <label class="flex items-center space-x-1 text-sm text-gray-600">
+                            <input type="radio" name="sigPosition" value="bottom_left">
+                            <span>左下角</span>
+                        </label>
+                        <label class="flex items-center space-x-1 text-sm text-gray-600">
+                            <input type="radio" name="sigPosition" value="center">
+                            <span>中央</span>
+                        </label>
+                    </div>
                 </div>
 
                 <!-- 執行按鈕 -->
@@ -1973,6 +1983,8 @@
             if (!uploadedSigImageId || !uploadedSigPdfId) return;
 
             const position = document.querySelector('input[name="sigPosition"]:checked').value;
+            const pageTargetSelect = document.getElementById('sigPageTargetSelect');
+            const pageTarget = pageTargetSelect ? pageTargetSelect.value : 'last';
 
             toggleLoader(true, '正在將簽名寫入 PDF 文件中，請稍候...');
             sigSubmitBtn.disabled = true;
@@ -1984,7 +1996,8 @@
                     body: JSON.stringify({
                         pdf_file_id: uploadedSigPdfId,
                         sig_file_id: uploadedSigImageId,
-                        position: position
+                        position: position,
+                        page_target: pageTarget
                     })
                 });
 
