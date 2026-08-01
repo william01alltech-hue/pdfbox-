@@ -16,6 +16,34 @@ from fastapi.responses import FileResponse
 from pdf2docx import Converter  # 引入 pdf2docx 轉換工具
 from pydantic import BaseModel
 from pypdf import PdfReader, PdfWriter
+from reportlab.pdfbase import pdfmetrics
+from reportlab.pdfbase.ttfonts import TTFont
+
+# 尋找並註冊中文字型供 ReportLab 使用（用於浮水印、頁碼等中文繪製）
+CHINESE_FONT_NAME = "Helvetica-Bold" # 預設字型
+possible_font_paths = [
+    "/System/Library/Fonts/STHeiti Light.ttc",
+    "/System/Library/Fonts/STHeiti Medium.ttc",
+    "/System/Library/Fonts/Supplemental/Songti.ttc",
+    "/System/Library/Fonts/PingFang.ttc",
+    "/Library/Fonts/Arial Unicode.ttf",
+    "/usr/share/fonts/truetype/wqy/wqy-microhei.ttc",
+    "/usr/share/fonts/truetype/wqy/wqy-zenhei.ttc",
+    "/usr/share/fonts/truetype/droid/DroidSansFallbackFull.ttf",
+    "/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc",
+    "/usr/share/fonts/truetype/noto/NotoSansCJK-Regular.ttc",
+    "/usr/share/fonts/noto-cjk/NotoSansCJK-Regular.ttc",
+    "/usr/share/fonts/google-noto-cjk/NotoSansCJK-Regular.ttc",
+]
+for p in possible_font_paths:
+    if os.path.exists(p):
+        try:
+            pdfmetrics.registerFont(TTFont("CustomChineseFont", p))
+            CHINESE_FONT_NAME = "CustomChineseFont"
+            print(f"[字型註冊成功] 已載入中文字型: {p}")
+            break
+        except Exception as fe:
+            print(f"[字型註冊警告] 無法載入 {p}: {fe}")
 
 app = FastAPI(title="PDFBox API", version="1.0.0")
 
@@ -113,6 +141,7 @@ class SignPdfRequest(BaseModel):
     pdf_file_id: str
     sig_file_id: str
     position: str | None = "bottom_right"
+    page_target: str | None = "last" # last, all, or comma-separated numbers like "1,3"
 
 
 class OrganizeRequest(BaseModel):
@@ -132,6 +161,19 @@ async def upload_file(file: UploadFile = File(...)):
 
     if ext not in allowed_extensions:
         raise HTTPException(status_code=400, detail="不支援的檔案格式")
+
+    # 限制單一檔案上傳大小為 100MB (對齊 iLovePDF 限額)
+    MAX_SIZE = 100 * 1024 * 1024
+    try:
+        file.file.seek(0, 2)
+        file_size = file.file.tell()
+        file.file.seek(0)
+        if file_size > MAX_SIZE:
+            raise HTTPException(status_code=413, detail="上傳檔案超過 100MB 限制")
+    except HTTPException as he:
+        raise he
+    except Exception as se:
+        print(f"[上傳大小檢查錯誤] {se}")
 
     file_id = str(uuid.uuid4())
     saved_filename = f"{file_id}{ext}"
@@ -624,7 +666,7 @@ async def add_page_numbers_route(data: AddPageNumbersRequest):
             can.setPageSize((width, height))
             
             text = f"{idx + 1} / {total_pages}"
-            can.setFont("Helvetica", 10)
+            can.setFont(CHINESE_FONT_NAME, 10)
             
             # 根據位置設定座標
             if data.position == "bottom_left":
@@ -700,10 +742,14 @@ async def add_watermark_route(data: AddWatermarkRequest):
             
             can.saveState()
             can.setFillColorRGB(0.5, 0.5, 0.5, alpha=0.3)
-            can.setFont("Helvetica-Bold", 45)
+            can.setFont(CHINESE_FONT_NAME, 45)
             can.translate(width / 2.0, height / 2.0)
             can.rotate(45)
-            can.drawCentredString(0, 0, data.watermark_text)
+            try:
+                can.drawCentredString(0, 0, data.watermark_text)
+            except UnicodeEncodeError:
+                safe_text = data.watermark_text.encode('latin-1', 'replace').decode('latin-1')
+                can.drawCentredString(0, 0, safe_text)
             can.restoreState()
             can.showPage()
         can.save()
